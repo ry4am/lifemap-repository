@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Appointment Calendar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .calendar-container {
+      background-color: #fff;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      width: 95%;
+      max-width: 900px;
+    }
+
+    .month-selector {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .month-selector button {
+      background-color: #2575fc;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+
+    .month-selector button:hover {
+      background-color: #1e63d1;
+    }
+
+    .month-selector h2 {
+      margin: 0;
+      color: #333;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      text-align: left;
+    }
+
+    .day {
+      background-color: #f8f8f8;
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 100px;
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .day strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    .day-header {
+      font-weight: bold;
+      background-color: #2575fc;
+      color: white;
+      padding: 8px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    /* Colour coding */
+    .service-type { color: blue; font-weight: bold; }
+    .urgent { color: red; font-weight: bold; }
+    .location { color: green; }
+    .standard { color: black; }
+
+    .legend {
+      margin-top: 20px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .legend span {
+      margin-right: 20px;
+    }
+
+    @media (max-width: 700px) {
+      .calendar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="calendar-container">
+    <div class="month-selector">
+      <button id="prevMonth">&lt; Prev</button>
+      <h2 id="monthName">October 2025</h2>
+      <button id="nextMonth">Next &gt;</button>
+    </div>
+
+    <div class="calendar" id="calendarGrid">
+      <!-- Calendar grid is dynamically generated -->
+    </div>
+
+    <div class="legend">
+      <strong>Legend:</strong><br>
+      <span class="service-type">Blue = Service Type</span>
+      <span class="urgent">Red = Urgent</span>
+      <span class="location">Green = Location</span>
+      <span class="standard">Black = Standard Task</span>
+    </div>
+  </div>
+
+  <script>
+    const monthName = document.getElementById("monthName");
+    const calendarGrid = document.getElementById("calendarGrid");
+
+    const now = new Date();
+    let currentMonth = now.getMonth();
+    let currentYear = now.getFullYear();
+
+    // Example appointment data (simulating saved data)
+    const bookings = JSON.parse(localStorage.getItem("appointments")) || [
+      { date: '2025-10-05', text: 'Cleaning Service', type: 'service-type' },
+      { date: '2025-10-07', text: 'Medical Appointment', type: 'urgent' },
+      { date: '2025-10-07', text: 'Clinic - Sydney', type: 'location' },
+      { date: '2025-10-12', text: 'Standard Check-in', type: 'standard' },
+      { date: '2025-10-18', text: 'Support Worker Visit', type: 'service-type' },
+      { date: '2025-10-18', text: 'Urgent Medication Refill', type: 'urgent' },
+      { date: '2025-10-18', text: 'Pharmacy - Melbourne', type: 'location' },
+    ];
+
+    function renderCalendar(month, year) {
+      calendarGrid.innerHTML = "";
+
+      const monthList = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      monthName.textContent = `${monthList[month]} ${year}`;
+
+      // Day headers
+      const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      daysOfWeek.forEach(day => {
+        const header = document.createElement("div");
+        header.classList.add("day-header");
+        header.textContent = day;
+        calendarGrid.appendChild(header);
+      });
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      // Empty slots before month starts
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement("div");
+        empty.classList.add("day");
+        calendarGrid.appendChild(empty);
+      }
+
+      // Generate days
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayDiv = document.createElement("div");
+        dayDiv.classList.add("day");
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        dayDiv.innerHTML = `<strong>${day}</strong>`;
+
+        // Match bookings for this day
+        const dayBookings = bookings.filter(b => b.date === dateStr);
+        dayBookings.forEach(b => {
+          const entry = document.createElement("p");
+          entry.className = b.type;
+          entry.textContent = b.text;
+          dayDiv.appendChild(entry);
+        });
+
+        calendarGrid.appendChild(dayDiv);
+      }
+
+      // Fill empty cells after last day
+      const totalCells = firstDay + daysInMonth;
+      const remainingCells = 42 - totalCells; // 7x6 grid
+      for (let i = 0; i < remainingCells; i++) {
+        const empty = document.createElement("div");
+        empty.classList.add("day");
+        calendarGrid.appendChild(empty);
+      }
+    }
+
+    // Navigation
+    document.getElementById("prevMonth").addEventListener("click", () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar(currentMonth, currentYear);
+    });
+
+    document.getElementById("nextMonth").addEventListener("click", () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar(currentMonth, currentYear);
+    });
+
+    renderCalendar(currentMonth, currentYear);
+  </script>
+</body>
+</html>
