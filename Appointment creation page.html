@@ -151,5 +151,69 @@
       alert('Appointment submitted successfully! (Demo only)');
     });
   </script>
+  <div id="aiResults" style="margin-top:20px;"></div>
+
+  <script>
+    document.getElementById("aiForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const message = document.getElementById("aiMessage").value;
+      if (!message.trim()) return alert("Please describe your need");
+
+      const resultBox = document.getElementById("aiResults");
+      resultBox.innerHTML = "Thinking...";
+
+      const res = await fetch("/api/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        resultBox.innerHTML = "<b>Error:</b> " + data.error;
+        return;
+      }
+
+      resultBox.innerHTML = `
+        <h3>Draft Appointment</h3>
+        <p><b>Service:</b> ${data.service || ""}</p>
+        <p><b>Suburb:</b> ${data.suburb || ""}</p>
+        <p><b>When:</b> ${data.day || ""} ${data.time || ""}</p>
+        <b>Suggested Providers:</b>
+        <ul>
+          ${(data.suggestedProviders || [])
+            .map((p) => `<li><b>${p.provider_name}</b> — ${p.suburb}</li>`)
+            .join("")}
+        </ul>
+        <button id="confirmBtn">Confirm Appointment</button>
+      `;
+
+      document.getElementById("confirmBtn").addEventListener("click", async () => {
+        const provider = data.suggestedProviders?.[0];
+        const res2 = await fetch("/api/appointments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            service: data.service,
+            suburb: data.suburb,
+            day: data.day,
+            time: data.time,
+            provider_id: provider?.provider_id,
+            provider_name: provider?.provider_name,
+            state: "confirmed"
+          })
+        });
+        const j2 = await res2.json();
+        if (j2.ok) {
+          alert("Appointment saved to Vercel Postgres!");
+          resultBox.innerHTML += "<p><b>Saved successfully.</b></p>";
+        } else {
+          alert("Failed to save appointment.");
+        }
+      });
+    });
+  </script>
 </body>
+
 </html>
