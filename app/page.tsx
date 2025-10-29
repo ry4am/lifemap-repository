@@ -1,7 +1,5 @@
 'use client';
 
-import Image from "next/image";
-
 export default function MainInterface() {
   return (
     <main style={{ display: "flex", flexDirection: "column", width: "100%" }}>
@@ -32,15 +30,14 @@ export default function MainInterface() {
           />
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "24px", paddingRight: "20px" }}>
+        <nav style={{ display: "flex", alignItems: "center", gap: "24px", paddingRight: "20px" }}>
           <button style={navBtn}>Ask AI</button>
-          <a style={navLink}>Home</a>
-          <a style={navLink}>Notifications</a>
-          <a style={navLink}>Calendar</a>
-          <a style={{ fontSize: "28px" }}>⋯</a>
-        </div>
+          <a href="#" style={navLink}>Home</a>
+          <a href="#" style={navLink}>Notifications</a>
+          <a href="#" style={navLink}>Calendar</a>
+          <a href="#" style={{ fontSize: "28px", textDecoration: "none", color: "inherit" }}>⋯</a>
+        </nav>
       </header>
-
 
       {/* 3-Column Layout */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr", padding: "30px 40px", gap: "40px" }}>
@@ -61,13 +58,12 @@ export default function MainInterface() {
           <div style={profileStatRow}><span>Reviews</span><span>2</span></div>
         </aside>
 
-
         {/* CENTER FEED */}
         <section style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
           <button style={createPostBtn}>＋ Create Post</button>
 
           {/* Example Post */}
-          <div style={postCard}>
+          <article style={postCard}>
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <div style={{ fontSize: "45px" }}>👤</div>
               <div>
@@ -84,21 +80,25 @@ export default function MainInterface() {
               <span>👍 Like</span>
               <span>💬 Comment</span>
             </div>
-          </div>
-
+          </article>
         </section>
-
 
         {/* RIGHT SIDEBAR */}
         <aside style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={alertBox}>Important: Appointment<br/>Tomorrow: 9:00am - 10:00am ></div>
-          <div style={alertBox}>Important: Pending Request<br/>Meeting Request ></div>
+          <div style={alertBox}>
+            Important: Appointment<br/>
+            Tomorrow: 9:00am - 10:00am &gt;
+          </div>
+          <div style={alertBox}>
+            Important: Pending Request<br/>
+            Meeting Request &gt;
+          </div>
 
           <div style={quickActions}>
             <div style={{ fontWeight: 600, marginBottom: "8px" }}>Quick Actions</div>
-            <a style={quickActionLink}>Post a Job ></a>
-            <a style={quickActionLink}>Manage Job Posts ></a>
-            <a style={quickActionLink}>Find a Support Provider ></a>
+            <a href="#" style={quickActionLink}>Post a Job &gt;</a>
+            <a href="#" style={quickActionLink}>Manage Job Posts &gt;</a>
+            <a href="#" style={quickActionLink}>Find a Support Provider &gt;</a>
           </div>
         </aside>
 
@@ -107,10 +107,9 @@ export default function MainInterface() {
   );
 }
 
-
 /* --- STYLES --- */
 
-const navBtn = {
+const navBtn: React.CSSProperties = {
   background: "white",
   border: "2px solid black",
   borderRadius: "18px",
@@ -119,12 +118,14 @@ const navBtn = {
   fontWeight: 600
 };
 
-const navLink = {
+const navLink: React.CSSProperties = {
   cursor: "pointer",
-  fontSize: "16px"
+  fontSize: "16px",
+  color: "inherit",
+  textDecoration: "none"
 };
 
-const profileCard = {
+const profileCard: React.CSSProperties = {
   border: "2px solid black",
   borderRadius: "18px",
   padding: "20px",
@@ -133,14 +134,14 @@ const profileCard = {
   gap: "6px"
 };
 
-const profileStatRow = {
+const profileStatRow: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   fontSize: "14px",
   padding: "3px 0"
 };
 
-const createPostBtn = {
+const createPostBtn: React.CSSProperties = {
   background: "white",
   border: "2px solid black",
   borderRadius: "25px",
@@ -150,14 +151,14 @@ const createPostBtn = {
   width: "fit-content"
 };
 
-const postCard = {
+const postCard: React.CSSProperties = {
   border: "2px solid black",
   borderRadius: "18px",
   padding: "18px",
   background: "#F2FAFF"
 };
 
-const imagePlaceholder = {
+const imagePlaceholder: React.CSSProperties = {
   border: "2px solid black",
   borderRadius: "12px",
   height: "250px",
@@ -167,7 +168,7 @@ const imagePlaceholder = {
   fontSize: "70px"
 };
 
-const alertBox = {
+const alertBox: React.CSSProperties = {
   background: "#F7BCBC",
   border: "2px solid black",
   borderRadius: "20px",
@@ -176,7 +177,7 @@ const alertBox = {
   textAlign: "center"
 };
 
-const quickActions = {
+const quickActions: React.CSSProperties = {
   border: "2px solid black",
   borderRadius: "20px",
   padding: "18px",
@@ -184,8 +185,10 @@ const quickActions = {
   flexDirection: "column"
 };
 
-const quickActionLink = {
+const quickActionLink: React.CSSProperties = {
   cursor: "pointer",
   fontSize: "14px",
-  padding: "4px 0"
+  padding: "4px 0",
+  color: "inherit",
+  textDecoration: "none"
 };
