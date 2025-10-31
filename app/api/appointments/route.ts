@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/appointments -> list latest appointments
+// GET /api/appointments 
 export async function GET() {
   try {
     const res = await sql`SELECT * FROM appointments ORDER BY created_at DESC LIMIT 100;`;

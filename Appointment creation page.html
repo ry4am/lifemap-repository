@@ -104,7 +104,7 @@
       const resultBox = document.getElementById('aiResults');
       resultBox.innerHTML = 'Thinking...';
 
-      // Ask AI for draft appointment
+      // AI draft appointment
       const res = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
