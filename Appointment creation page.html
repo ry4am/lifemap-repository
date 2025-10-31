@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Appointment Creation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      width: 100%;
+      max-width: 500px;
+    }
+    h2 { text-align: center; margin-bottom: 25px; color: #333; }
+    label { font-weight: bold; margin-bottom: 5px; display: block; color: #333; }
+    textarea, input {
+      width: 100%; padding: 10px; margin-bottom: 15px;
+      border: 1px solid #ccc; border-radius: 8px; font-size: 14px;
+    }
+    textarea:focus, input:focus {
+      border-color: #2575fc; outline: none;
+      box-shadow: 0 0 5px rgba(37, 117, 252, 0.5);
+    }
+    .btn {
+      width: 100%; background-color: #2575fc; color: #fff;
+      padding: 12px; border: none; border-radius: 8px;
+      cursor: pointer; font-size: 16px; transition: background 0.3s ease;
+    }
+    .btn:hover { background-color: #1e63d1; }
+    .mic-btn { background-color: #28a745; margin-bottom: 15px; }
+    .mic-btn:hover { background-color: #218838; }
+    .status { text-align: center; font-size: 14px; color: #555; margin-bottom: 15px; }
+    #aiResults { margin-top: 20px; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>Book an Appointment</h2>
+
+    <form id="appointmentForm">
+      <label for="assistance">What do you need assistance with?</label>
+      <textarea id="assistance" rows="4" placeholder="Describe your needs..." required></textarea>
+
+      <button type="button" id="speechBtn" class="btn mic-btn">🎤 Speak Instead</button>
+      <div class="status" id="status">Click the microphone and start speaking...</div>
+
+      <label for="address">Your Address</label>
+      <input type="text" id="address" placeholder="Enter your address" required />
+
+      <button type="submit" class="btn">Submit Appointment</button>
+    </form>
+
+    <div id="aiResults"></div>
+  </div>
+
+  <script>
+    // --- Speech-to-text ---
+    const speechBtn = document.getElementById('speechBtn');
+    const assistance = document.getElementById('assistance');
+    const status = document.getElementById('status');
+
+    if ('webkitSpeechRecognition' in window) {
+      const recognition = new webkitSpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.lang = 'en-AU';
+
+      speechBtn.addEventListener('click', () => {
+        recognition.start();
+        status.textContent = 'Listening... please speak now.';
+      });
+
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        assistance.value += (assistance.value ? ' ' : '') + transcript;
+        status.textContent = 'Speech captured successfully!';
+      };
+      recognition.onerror = () => status.textContent = 'Speech recognition error. Try again.';
+      recognition.onend = () => status.textContent = 'Click the microphone to speak again.';
+    } else {
+      speechBtn.disabled = true;
+      status.textContent = 'Speech-to-text not supported in this browser.';
+    }
+
+    // --- Appointment AI integration ---
+    document.getElementById('appointmentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const message = assistance.value.trim();
+      if (!message) return alert('Please describe your needs.');
+
+      const resultBox = document.getElementById('aiResults');
+      resultBox.innerHTML = 'Thinking...';
+
+      // Ask AI for draft appointment
+      const res = await fetch('/api/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+
+      if (data.error) {
+        resultBox.innerHTML = '<b>Error:</b> ' + data.error;
+        return;
+      }
+
+      resultBox.innerHTML = `
+        <h3>Draft Appointment</h3>
+        <p><b>Service:</b> ${data.service || ''}</p>
+        <p><b>Suburb:</b> ${data.suburb || ''}</p>
+        <p><b>When:</b> ${data.day || ''} ${data.time || ''}</p>
+        <b>Suggested Providers:</b>
+        <ul>
+          ${(data.suggestedProviders || [])
+            .map((p) => `<li><b>${p.provider_name}</b> — ${p.suburb}</li>`)
+            .join('')}
+        </ul>
+        <button id="confirmBtn" class="btn" style="margin-top:10px;">Confirm Appointment</button>
+      `;
+
+      document.getElementById('confirmBtn').addEventListener('click', async () => {
+        const provider = data.suggestedProviders?.[0];
+        const res2 = await fetch('/api/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service: data.service,
+            suburb: data.suburb,
+            day: data.day,
+            time: data.time,
+            provider_id: provider?.provider_id,
+            provider_name: provider?.provider_name,
+            state: 'confirmed'
+          })
+        });
+        const j2 = await res2.json();
+        if (j2.ok) {
+          alert('Appointment saved to Vercel Postgres!');
+          resultBox.innerHTML += '<p><b>Saved successfully.</b></p>';
+        } else {
+          alert('Failed to save appointment.');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
