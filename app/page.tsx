@@ -1,43 +1,13 @@
 'use client';
+import NavBar from '@/components/NavBar';
 
+// ...keep your styles/consts as-is...
 export default function MainInterface() {
   return (
     <main style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-
-      {/* Top Navigation Bar */}
-      <header style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        background: "#59C3FF",
-        padding: "10px 24px",
-        borderBottom: "2px solid black"
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{ fontSize: "28px", fontWeight: 700 }}>❤️ LifeMap</div>
-        </div>
-
-        <div style={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
-          <input
-            placeholder="Search . . ."
-            style={{
-              width: "50%",
-              padding: "10px 16px",
-              borderRadius: "25px",
-              border: "2px solid black",
-              fontSize: "15px"
-            }}
-          />
-        </div>
-
-        <nav style={{ display: "flex", alignItems: "center", gap: "24px", paddingRight: "20px" }}>
-          <button style={navBtn}>Ask AI</button>
-          <a href="#" style={navLink}>Home</a>
-          <a href="#" style={navLink}>Notifications</a>
-          <a href="#" style={navLink}>Calendar</a>
-          <a href="#" style={{ fontSize: "28px", textDecoration: "none", color: "inherit" }}>⋯</a>
-        </nav>
-      </header>
+      <NavBar />
+      {/* the rest of your home page content unchanged */}
+    </main>
 
       {/* 3-Column Layout */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr", padding: "30px 40px", gap: "40px" }}>
