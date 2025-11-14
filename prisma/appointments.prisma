@@ -1,0 +1,19 @@
+datasource db {
+  provider = "postgresql"
+  url      = env(DATABASE_URL=postgresql://neondb_owner:npg_Lwf1hk7xjWYI@ep-wandering-star-a7kldom8-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require)
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/appointments"
+}
+
+model Appointment {
+  id           String   @id @default(cuid())
+  userId       String
+  title        String
+  dateTime     DateTime
+  reminderTime DateTime?
+  location     String?
+  createdAt    DateTime @default(now())
+}
