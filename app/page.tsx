@@ -1,164 +1,230 @@
 'use client';
+
+import React, { type CSSProperties } from 'react';
 import NavBar from '@/components/NavBar';
 
-// ...keep your styles/consts as-is...
 export default function MainInterface() {
   return (
-    <main style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+    <div style={pageWrapper}>
       <NavBar />
-      {/* the rest of your home page content unchanged */}
-    </main>
 
-      {/* 3-Column Layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr", padding: "30px 40px", gap: "40px" }}>
+      <main style={mainWrapper}>
+        {/* 3-Column Layout */}
+        <div style={gridWrapper}>
+          {/* LEFT SIDEBAR — Profile Card */}
+          <aside style={profileCard}>
+            <div
+              style={{
+                width: 120,
+                height: 120,
+                borderRadius: '50%',
+                border: '4px solid black',
+                margin: '0 auto 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 60,
+              }}
+            >
+              👤
+            </div>
 
-        {/* LEFT SIDEBAR — Profile Card */}
-        <aside style={profileCard}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "80px" }}>👤</div>
-            <div style={{ fontSize: "18px", fontWeight: 600 }}>Ryan Panucci</div>
-            <div style={{ fontSize: "13px", opacity: 0.6 }}>Participant</div>
-          </div>
+            <div style={{ textAlign: 'center', fontWeight: 700, fontSize: 18 }}>
+              Ryan Panucci
+            </div>
+            <div style={{ textAlign: 'center', fontSize: 14 }}>Participant</div>
 
-          <hr />
+            <hr style={{ margin: '14px 0' }} />
 
-          <div style={profileStatRow}><span>Profile Viewers</span><span>8</span></div>
-          <div style={profileStatRow}><span>Jobs Completed</span><span>12</span></div>
-          <div style={profileStatRow}><span>Connections</span><span>6</span></div>
-          <div style={profileStatRow}><span>Reviews</span><span>2</span></div>
-        </aside>
+            <div style={profileStatRow}>
+              <span>Profile Viewers</span>
+              <span>8</span>
+            </div>
+            <div style={profileStatRow}>
+              <span>Jobs Completed</span>
+              <span>12</span>
+            </div>
+            <div style={profileStatRow}>
+              <span>Connections</span>
+              <span>6</span>
+            </div>
+            <div style={profileStatRow}>
+              <span>Reviews</span>
+              <span>2</span>
+            </div>
+          </aside>
 
-        {/* CENTER FEED */}
-        <section style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
-          <button style={createPostBtn}>＋ Create Post</button>
+          {/* CENTER FEED */}
+          <section>
+            <button style={createPostBtn}>＋ Create Post</button>
 
-          {/* Example Post */}
-          <article style={postCard}>
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div style={{ fontSize: "45px" }}>👤</div>
-              <div>
-                <div style={{ fontWeight: 600 }}>User2</div>
-                <div style={{ fontSize: "12px", opacity: 0.6 }}>2 Connections • 2h ago</div>
+            <div style={{ marginTop: 24 }}>
+              <article style={postCard}>
+                <header
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: '50%',
+                      border: '3px solid black',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 32,
+                    }}
+                  >
+                    👤
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700 }}>User2</div>
+                    <div style={{ fontSize: 12, color: '#555' }}>
+                      2 Connections • 2h ago
+                    </div>
+                  </div>
+                </header>
+
+                <div style={{ marginBottom: 12, fontWeight: 600 }}>
+                  Post Description
+                </div>
+
+                <div style={imagePlaceholder}>🖼</div>
+
+                <footer
+                  style={{
+                    display: 'flex',
+                    gap: 24,
+                    marginTop: 12,
+                    fontSize: 14,
+                  }}
+                >
+                  <span style={{ cursor: 'pointer' }}>👍 Like</span>
+                  <span style={{ cursor: 'pointer' }}>💬 Comment</span>
+                </footer>
+              </article>
+            </div>
+          </section>
+
+          {/* RIGHT SIDEBAR */}
+          <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={alertBox}>
+              <div>Important: Appointment</div>
+              <div style={{ fontWeight: 400, marginTop: 4 }}>
+                Tomorrow: 9:00am - 10:00am &gt;
               </div>
             </div>
 
-            <p style={{ margin: "12px 0 6px" }}>Post Description</p>
-
-            <div style={imagePlaceholder}>🖼️</div>
-
-            <div style={{ display: "flex", gap: "20px", paddingTop: "10px" }}>
-              <span>👍 Like</span>
-              <span>💬 Comment</span>
+            <div style={alertBox}>
+              <div>Important: Pending Request</div>
+              <div style={{ fontWeight: 400, marginTop: 4 }}>Meeting Request &gt;</div>
             </div>
-          </article>
-        </section>
 
-        {/* RIGHT SIDEBAR */}
-        <aside style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-          <div style={alertBox}>
-            Important: Appointment<br/>
-            Tomorrow: 9:00am - 10:00am &gt;
-          </div>
-          <div style={alertBox}>
-            Important: Pending Request<br/>
-            Meeting Request &gt;
-          </div>
-
-          <div style={quickActions}>
-            <div style={{ fontWeight: 600, marginBottom: "8px" }}>Quick Actions</div>
-            <a href="#" style={quickActionLink}>Post a Job &gt;</a>
-            <a href="#" style={quickActionLink}>Manage Job Posts &gt;</a>
-            <a href="#" style={quickActionLink}>Find a Support Provider &gt;</a>
-          </div>
-        </aside>
-
-      </div>
-    </main>
+            <div style={quickActions}>
+              <div
+                style={{
+                  fontWeight: 700,
+                  textAlign: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                Quick Actions
+              </div>
+              <a style={quickActionLink}>Post a Job &gt;</a>
+              <a style={quickActionLink}>Manage Job Posts &gt;</a>
+              <a style={quickActionLink}>Find a Support Provider &gt;</a>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
   );
 }
 
 /* --- STYLES --- */
 
-const navBtn: React.CSSProperties = {
-  background: "white",
-  border: "2px solid black",
-  borderRadius: "18px",
-  padding: "6px 14px",
-  cursor: "pointer",
-  fontWeight: 600
+const pageWrapper: CSSProperties = {
+  minHeight: '100vh',
+  background: '#ffffff',
 };
 
-const navLink: React.CSSProperties = {
-  cursor: "pointer",
-  fontSize: "16px",
-  color: "inherit",
-  textDecoration: "none"
+const mainWrapper: CSSProperties = {
+  padding: '30px 40px',
 };
 
-const profileCard: React.CSSProperties = {
-  border: "2px solid black",
-  borderRadius: "18px",
-  padding: "20px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "6px"
+const gridWrapper: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 2fr 1fr',
+  gap: '40px',
 };
 
-const profileStatRow: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  fontSize: "14px",
-  padding: "3px 0"
+const profileCard: CSSProperties = {
+  border: '2px solid black',
+  borderRadius: '18px',
+  padding: '20px',
+  display: 'flex',
+  flexDirection: 'column',
 };
 
-const createPostBtn: React.CSSProperties = {
-  background: "white",
-  border: "2px solid black",
-  borderRadius: "25px",
-  padding: "10px 20px",
-  cursor: "pointer",
+const profileStatRow: CSSProperties = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  fontSize: '14px',
+  padding: '3px 0',
+};
+
+const createPostBtn: CSSProperties = {
+  background: 'white',
+  border: '2px solid black',
+  borderRadius: '25px',
+  padding: '10px 20px',
+  cursor: 'pointer',
   fontWeight: 600,
-  width: "fit-content"
 };
 
-const postCard: React.CSSProperties = {
-  border: "2px solid black",
-  borderRadius: "18px",
-  padding: "18px",
-  background: "#F2FAFF"
+const postCard: CSSProperties = {
+  border: '2px solid black',
+  borderRadius: '18px',
+  padding: '18px',
+  background: '#F2FAFF',
 };
 
-const imagePlaceholder: React.CSSProperties = {
-  border: "2px solid black",
-  borderRadius: "12px",
-  height: "250px",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  fontSize: "70px"
+const imagePlaceholder: CSSProperties = {
+  border: '2px solid black',
+  borderRadius: '12px',
+  height: '250px',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: '70px',
 };
 
-const alertBox: React.CSSProperties = {
-  background: "#F7BCBC",
-  border: "2px solid black",
-  borderRadius: "20px",
-  padding: "16px",
+const alertBox: CSSProperties = {
+  background: '#F7BCBC',
+  border: '2px solid black',
+  borderRadius: '20px',
+  padding: '16px',
   fontWeight: 600,
-  textAlign: "center"
+  textAlign: 'center',
 };
 
-const quickActions: React.CSSProperties = {
-  border: "2px solid black",
-  borderRadius: "20px",
-  padding: "18px",
-  display: "flex",
-  flexDirection: "column"
+const quickActions: CSSProperties = {
+  border: '2px solid black',
+  borderRadius: '20px',
+  padding: '18px',
+  display: 'flex',
+  flexDirection: 'column',
 };
 
-const quickActionLink: React.CSSProperties = {
-  cursor: "pointer",
-  fontSize: "14px",
-  padding: "4px 0",
-  color: "inherit",
-  textDecoration: "none"
+const quickActionLink: CSSProperties = {
+  cursor: 'pointer',
+  fontSize: '14px',
+  padding: '4px 0',
+  color: 'inherit',
+  textDecoration: 'none',
 };
