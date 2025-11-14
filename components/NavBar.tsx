@@ -1,5 +1,7 @@
 'use client';
 
+import type React from 'react';
+
 export default function NavBar() {
   const navBtn: React.CSSProperties = {
     background: "white",
@@ -9,6 +11,7 @@ export default function NavBar() {
     cursor: "pointer",
     fontWeight: 600
   };
+
   const navLink: React.CSSProperties = {
     cursor: "pointer",
     fontSize: "16px",
@@ -49,6 +52,7 @@ export default function NavBar() {
         <a href="/" style={navLink}>Home</a>
         <a href="/notifications" style={navLink}>Notifications</a>
         <a href="/calendar" style={navLink}>Calendar</a>
+        <a href="/appointments" style={navLink}>Appointments</a>
         <a href="#" style={{ fontSize: "28px", textDecoration: "none", color: "inherit" }}>⋯</a>
       </nav>
     </header>
