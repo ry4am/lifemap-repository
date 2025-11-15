@@ -8,7 +8,6 @@ import type { User as NextAuthUser } from "next-auth";
 const handler = NextAuth({
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
-  session: { strategy: "jwt" },
   providers: [
     Credentials({
       name: "Credentials",
@@ -22,24 +21,29 @@ const handler = NextAuth({
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
-        
+
         if (!user) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
         if (!isValid) return null;
 
         const safeUser: NextAuthUser = {
-          id: user.id.toString(), 
+          id: user.id.toString(),
           email: user.email,
           name: user.name,
-      },
+        };
 
         return safeUser;
-    },
-  }),
+      },
+    }),
+  ],
   pages: {
     signIn: "/login",
   },
+});
   callbacks: {
     async jwt({ token, user }) {
       if (user) token.userId = (user as any).id;
