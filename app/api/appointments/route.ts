@@ -54,16 +54,13 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   try {
     const appointments = await prismaAppointments.appointment.findMany({
-      orderBy: { createdAt: 'desc' }, // adjust field name if different
+      orderBy: { created_at: 'desc' }, // ✅ matches Prisma field
       take: 100,
     });
 
-    return NextResponse.json(appointments, { status: 200 });
+    return NextResponse.json(appointments);
   } catch (e: any) {
-    console.error('appointments GET error:', e);
-    return NextResponse.json(
-      { ok: false, error: e?.message ?? 'Server error' },
-      { status: 500 }
-    );
+    console.error("appointments GET error:", e);
+    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }
