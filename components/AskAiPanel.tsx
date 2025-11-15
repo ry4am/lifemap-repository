@@ -136,9 +136,10 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
           width: 420px;
           max-width: 100%;
           height: 100vh;
+          box-sizing: border-box;
           background: #0f172a;
           border-left: 1px solid #1e293b;
-          padding: 20px 20px 16px;
+          padding: 16px 20px 12px;
           box-shadow: -20px 0 40px rgba(0, 0, 0, 0.45);
           color: #e5e7eb;
           display: flex;
