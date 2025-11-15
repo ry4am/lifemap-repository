@@ -11,13 +11,14 @@ generator client {
 }
 
 model User {
-  id           Int   @id @default(cuid())
-  name         String?
-  email        String   @unique
-  password     String
-  role         String   @default("participant")
-  createdAt DateTime @default(now()) @map("created_at")? // only if you already had something similar
+  id          Int      @id @default(autoincrement())
+  name        String?
+  email       String   @unique
+  password    String
+  role        String   @default("participant")
+  createdAt   DateTime @default(now()) @map("created_at")
   // keep any other fields you already have (accounts, sessions, etc.)
+
 
 
   // relations
