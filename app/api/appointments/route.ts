@@ -1,13 +1,14 @@
 import { prismaAppointments } from '@/lib/prismaAppointments';
-import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@vercel/postgres";
+import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
+// POST /api/appointments  -> create an appointment
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
     const {
       service,
       suburb,
@@ -15,31 +16,54 @@ export async function POST(req: NextRequest) {
       time,
       provider_id,
       provider_name,
-      state = "confirmed"
+      // if your model has these fields, otherwise remove/adjust
+      state = 'confirmed',
     } = body || {};
 
-    if (!service) return NextResponse.json({ ok: false, error: "service required" }, { status: 400 });
+    // Basic validation
+    if (!service || !suburb || !day || !time) {
+      return NextResponse.json(
+        { ok: false, error: 'Missing required appointment fields' },
+        { status: 400 }
+      );
+    }
 
-    const inserted = await sql`
-      INSERT INTO appointments (service, suburb, day, time, provider_id, provider_name, state)
-      VALUES (${service}, ${suburb}, ${day}, ${time}, ${provider_id}, ${provider_name}, ${state})
-      RETURNING *;
-    `;
+    const appointment = await prismaAppointments.appointment.create({
+      data: {
+        service,
+        suburb,
+        day,
+        time,
+        providerId: provider_id,
+        providerName: provider_name,
+        state,
+      },
+    });
 
-    return NextResponse.json({ ok: true, appointment: inserted.rows[0] });
+    return NextResponse.json({ ok: true, appointment }, { status: 201 });
   } catch (e: any) {
-    console.error("appointments POST error:", e);
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+    console.error('appointments POST error:', e);
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? 'Server error' },
+      { status: 500 }
+    );
   }
 }
 
-// GET /api/appointments 
+// GET /api/appointments  -> list recent appointments
 export async function GET() {
   try {
-    const res = await sql`SELECT * FROM appointments ORDER BY created_at DESC LIMIT 100;`;
-    return NextResponse.json(res.rows);
+    const appointments = await prismaAppointments.appointment.findMany({
+      orderBy: { createdAt: 'desc' }, // adjust field name if different
+      take: 100,
+    });
+
+    return NextResponse.json(appointments, { status: 200 });
   } catch (e: any) {
-    console.error("appointments GET error:", e);
-    return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
+    console.error('appointments GET error:', e);
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? 'Server error' },
+      { status: 500 }
+    );
   }
 }
