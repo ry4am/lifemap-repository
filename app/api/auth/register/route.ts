@@ -1,28 +1,45 @@
 import { NextResponse } from "next/server";
-import { prismaAppointments } from '@/lib/prismaAppointments';
+import { prisma } from "@/lib/prisma";  // use accounts DB client
 import bcrypt from "bcrypt";
 
 export async function POST(req: Request) {
   try {
-    const { fullName, email, password } = await req.json();
+    const { name, email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json({ error: "Missing email or password" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email and password are required" },
+        { status: 400 }
+      );
     }
 
-    const exists = await prisma.user.findUnique({ where: { email } });
+    const exists = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (exists) {
-      return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+      return NextResponse.json(
+        { error: "Email already in use" },
+        { status: 409 }
+      );
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    await prisma.user.create({
-      data: { email, name: fullName || null, password: hashed },
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashed,
+      },
     });
 
-    return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to register" }, { status: 500 });
+    return NextResponse.json({ user }, { status: 201 });
+  } catch (e: any) {
+    console.error("register error:", e);
+    return NextResponse.json(
+      { error: e?.message ?? "Server error" },
+      { status: 500 }
+    );
   }
 }
