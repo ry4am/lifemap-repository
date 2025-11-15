@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { prismaAppointments } from '@/lib/prismaAppointments';
+import { prisma } from "@/lib/prisma";   // ✅ FIXED IMPORT
 
 export async function GET() {
   const count = await prisma.user.count();
-  return NextResponse.json({ ok: true, users: count });
+
+  return NextResponse.json({
+    ok: true,
+    users: count,
+  });
 }
