@@ -1,60 +1,85 @@
 'use client';
 
-import type React from 'react';
+import React, { useState } from "react";
+import AskAiPanel from "./AskAiPanel";
 
 export default function NavBar() {
-  const navBtn: React.CSSProperties = {
-    background: "white",
-    border: "2px solid black",
-    borderRadius: "18px",
-    padding: "6px 14px",
-    cursor: "pointer",
-    fontWeight: 600
-  };
+  const [showAskAi, setShowAskAi] = useState(false);
 
-  const navLink: React.CSSProperties = {
+  const navButton: React.CSSProperties = {
     cursor: "pointer",
     fontSize: "16px",
     color: "inherit",
-    textDecoration: "none"
+    textDecoration: "none",
+  };
+
+  const askAiButton: React.CSSProperties = {
+    padding: "6px 18px",
+    borderRadius: "999px",
+    border: "2px solid black",
+    background: "white",
+    cursor: "pointer",
+    fontWeight: 600,
   };
 
   return (
-    <header style={{
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      background: "#59C3FF",
-      padding: "10px 24px",
-      borderBottom: "2px solid black"
-    }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <a href="/" style={{ fontSize: "28px", fontWeight: 700, color: "inherit", textDecoration: "none" }}>
-          ❤️ LifeMap
-        </a>
-      </div>
+    <>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 24px",
+          background: "#63C7FF",
+          borderBottom: "2px solid black",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <a
+            href="/"
+            style={{ fontSize: "24px", fontWeight: 700, color: "inherit", textDecoration: "none" }}
+          >
+            ❤️ LifeMap
+          </a>
+        </div>
 
-      <div style={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
-        <input
-          placeholder="Search . . ."
-          style={{
-            width: "50%",
-            padding: "10px 16px",
-            borderRadius: "25px",
-            border: "2px solid black",
-            fontSize: "15px"
-          }}
-        />
-      </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <input
+            placeholder="Search . . ."
+            style={{
+              width: "60%",
+              maxWidth: "480px",
+              borderRadius: "999px",
+              border: "2px solid black",
+              padding: "8px 16px",
+            }}
+          />
+        </div>
 
-      <nav style={{ display: "flex", alignItems: "center", gap: "24px", paddingRight: "20px" }}>
-        <button style={navBtn}>Ask AI</button>
-        <a href="/" style={navLink}>Home</a>
-        <a href="/notifications" style={navLink}>Notifications</a>
-        <a href="/calendar" style={navLink}>Calendar</a>
-        <a href="/appointments" style={navLink}>Appointments</a>
-        <a href="#" style={{ fontSize: "28px", textDecoration: "none", color: "inherit" }}>⋯</a>
-      </nav>
-    </header>
+        <nav style={{ display: "flex", alignItems: "center", gap: "24px", paddingRight: "20px" }}>
+          <button
+            type="button"
+            style={askAiButton}
+            onClick={() => setShowAskAi(true)}
+          >
+            Ask AI
+          </button>
+          <a href="/" style={navButton}>
+            Home
+          </a>
+          <a href="/notifications" style={navButton}>
+            Notifications
+          </a>
+          <a href="/calendar" style={navButton}>
+            Calendar
+          </a>
+          <a href="/appointments" style={navButton}>
+            Appointments
+          </a>
+        </nav>
+      </header>
+
+      {showAskAi && <AskAiPanel onClose={() => setShowAskAi(false)} />}
+    </>
   );
 }
