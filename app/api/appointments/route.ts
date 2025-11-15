@@ -1,3 +1,4 @@
+import { prismaAppointments } from '@/lib/prismaAppointments';
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@vercel/postgres";
 

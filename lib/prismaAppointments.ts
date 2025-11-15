@@ -1,9 +1,18 @@
-import { PrismaClient as AppointmentsClient } from '../generated/appointments';
+// lib/prismaAppointments.ts
+// Client for the appointments DB generated from prisma/appointments.schema.prisma
 
-const globalForApt = global as unknown as { prismaAppointments?: AppointmentsClient };
+import { PrismaClient } from '../prisma/generated/appointments';
+
+const globalForPrismaAppointments = globalThis as unknown as {
+  prismaAppointments?: PrismaClient;
+};
 
 export const prismaAppointments =
-  globalForApt.prismaAppointments ??
-  new AppointmentsClient({ log: ['error', 'warn'] });
+  globalForPrismaAppointments.prismaAppointments ??
+  new PrismaClient({
+    log: ['warn', 'error'],
+  });
 
-if (process.env.NODE_ENV !== 'production') globalForApt.prismaAppointments = prismaAppointments;
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrismaAppointments.prismaAppointments = prismaAppointments;
+}

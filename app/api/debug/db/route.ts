@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prismaAppointments } from '@/lib/prismaAppointments';
 
 export async function GET() {
   const count = await prisma.user.count();
