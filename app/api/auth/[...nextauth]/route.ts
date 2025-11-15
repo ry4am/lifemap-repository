@@ -1,20 +1,13 @@
-// app/api/auth/[...nextauth]/route.ts
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
-import type { User as NextAuthUser } from "next-auth";
 
 const handler = NextAuth({
   adapter: PrismaAdapter(prisma),
   secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
-
-  pages: {
-    signIn: "/login",
-    error: "/login", // ⬅ send errors back to login page
-  },
 
   providers: [
     Credentials({
@@ -23,7 +16,7 @@ const handler = NextAuth({
         email: { label: "Email", type: "text" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials): Promise<NextAuthUser | null> {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
         const user = await prisma.user.findUnique({
@@ -37,24 +30,26 @@ const handler = NextAuth({
         );
         if (!isValid) return null;
 
-        const safeUser: NextAuthUser = {
+        return {
           id: user.id.toString(),
           email: user.email,
           name: user.name,
         };
-
-        return safeUser;
       },
     }),
   ],
 
+  pages: {
+    signIn: "/login",
+  },
+
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.userId = (user as any).id;
+      if (user) token.userId = user.id;
       return token;
     },
     async session({ session, token }) {
-      if (token?.userId) (session as any).userId = token.userId;
+      if (token?.userId) session.userId = token.userId;
       return session;
     },
   },
