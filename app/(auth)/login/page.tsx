@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
@@ -11,7 +11,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
 
@@ -73,7 +73,7 @@ export default function Login() {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #0f172a; /* dark dashboard background */
+          background: #0f172a;
           padding: 20px;
         }
 
