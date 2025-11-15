@@ -1,9 +1,8 @@
 // prisma/schema.prisma
-// Accounts database: users + auth
+// Accounts database: users + auth tables
 
 datasource db {
   provider = "postgresql"
-  // Neon connection string for lifemap-accounts
   url      = env("DATABASE_URL_ACCOUNTS")
 }
 
@@ -11,7 +10,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Basic user model + fields you need for login
 model User {
   id           String   @id @default(cuid())
   name         String?
@@ -21,10 +19,10 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  // Appointments live in a separate DB; we reference userId there as a String
+  // relations
+  accounts Account[]
+  sessions Session[]
 }
-
-// The 3 models below are required if you’re using NextAuth + PrismaAdapter
 
 model Account {
   id                String  @id @default(cuid())
@@ -55,10 +53,4 @@ model Session {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
+model VerificationT
