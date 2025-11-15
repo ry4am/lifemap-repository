@@ -34,8 +34,8 @@ export async function POST(req: NextRequest) {
         suburb,
         day,
         time,
-        providerId: provider_id,
-        providerName: provider_name,
+        provider_id,
+        provider_name,
         state,
       },
     });
