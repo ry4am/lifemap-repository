@@ -21,7 +21,11 @@ model Appointment {
   time          String   // or DateTime / Time type if you change schema
   provider_id   String
   provider_name String
-  state         String   // e.g. "confirmed", "cancelled"
+  state         String   // currently you're using this for "VIC"
   created_at    DateTime @default(now())
+
+  // which user booked this appointment
+  user_email    String?
 }
+
 
