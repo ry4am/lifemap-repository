@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import NavBar from '@/components/NavBar';
 import providersData from '@/data/providers.json';
 
-// Match providers.json shape
+// Match providers.json
 type Provider = {
   provider_id: number;
   provider_name: string;
@@ -23,7 +23,7 @@ type FormState = {
   date: string;
   time: string;
   location: string;
-  email: string;   // <--- added
+  email: string;
 };
 
 export default function AppointmentsPage() {
@@ -43,7 +43,7 @@ export default function AppointmentsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
 
-  // Build a unique, cleaned list of all service categories from JSON
+  // Build clean unique service categories
   const allServiceCategories = useMemo(() => {
     const set = new Set<string>();
 
@@ -52,12 +52,8 @@ export default function AppointmentsPage() {
         if (!raw) continue;
         const clean = raw.trim();
         if (!clean) continue;
-
         const lc = clean.toLowerCase();
-
-        // Skip fragments like "or education", "or maintain employment"
         if (lc.startsWith('or ') || lc.startsWith('and ')) continue;
-
         set.add(clean);
       }
     }
@@ -69,46 +65,25 @@ export default function AppointmentsPage() {
     e.preventDefault();
     setLoading(true);
 
-    const res = await fetch('/api/appointments', {
+    await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        title: form.title || form.serviceType || 'Appointment',
+        title: form.title,
         serviceType: form.serviceType,
-        date: form.date,      // "YYYY-MM-DD"
-        time: form.time,      // "HH:MM"
+        date: form.date,
+        time: form.time,
         location: form.location,
-        email: form.email,    // <---- send email to backend
+        email: form.email, // backend ignores this now
       }),
     });
 
     setLoading(false);
-
-    if (res.ok) {
-      alert('Appointment booked successfully');
-      setForm({
-        title: '',
-        serviceType: '',
-        date: '',
-        time: '',
-        location: '',
-        email: '',
-      });
-    } else {
-      const j = await res.json().catch(() => ({}));
-      alert(j.error || 'Failed to create appointment');
-    }
+    alert('Appointment booked successfully');
   };
 
   return (
-    <main
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100dvh',
-        width: '100%',
-      }}
-    >
+    <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', width: '100%' }}>
       <NavBar />
 
       <section
@@ -133,33 +108,26 @@ export default function AppointmentsPage() {
             boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
             display: 'grid',
             gap: 12,
-            boxSizing: 'border-box',
           }}
         >
-          <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
-          <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
-            Tell LifeMap what you need help with and when. The AI will select the most suitable NDIS provider for you.
-          </p>
+          <h1>Book an Appointment</h1>
 
-          {/* Title */}
           <label style={labelStyle}>
             Appointment title
             <input
               type="text"
-              placeholder="e.g. Plan Management review"
               value={form.title}
               onChange={update('title')}
               style={inputStyle}
             />
           </label>
 
-          {/* Service category */}
           <label style={labelStyle}>
             Service category
             <select
               value={form.serviceType}
               onChange={update('serviceType')}
-              style={{ ...inputStyle, cursor: 'pointer' }}
+              style={inputStyle}
               required
             >
               <option value="">Select a category…</option>
@@ -171,7 +139,6 @@ export default function AppointmentsPage() {
             </select>
           </label>
 
-          {/* Date & time */}
           <div style={{ display: 'flex', gap: 12 }}>
             <label style={{ ...labelStyle, flex: 1 }}>
               Date
@@ -180,7 +147,6 @@ export default function AppointmentsPage() {
                 value={form.date}
                 onChange={update('date')}
                 style={inputStyle}
-                required
               />
             </label>
             <label style={{ ...labelStyle, flex: 1 }}>
@@ -190,53 +156,43 @@ export default function AppointmentsPage() {
                 value={form.time}
                 onChange={update('time')}
                 style={inputStyle}
-                required
               />
             </label>
           </div>
 
-          {/* Location */}
           <label style={labelStyle}>
-            Location (suburb or notes)
+            Location
             <input
               type="text"
-              placeholder="e.g. Melbourne, home visit, Telehealth"
               value={form.location}
               onChange={update('location')}
               style={inputStyle}
             />
           </label>
 
-          {/* Email */}
           <label style={labelStyle}>
-            Email address for confirmation
+            Email address (unused)
             <input
               type="email"
-              placeholder="your@email.com"
               value={form.email}
-              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              required
+              onChange={update('email')}
               style={inputStyle}
             />
           </label>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
             style={{
-              marginTop: 8,
               padding: '10px 16px',
               borderRadius: 16,
               border: '2px solid black',
               background: '#59C3FF',
               fontWeight: 700,
               cursor: 'pointer',
-              width: '100%',
-              boxSizing: 'border-box',
             }}
           >
-            {loading ? 'Finding provider…' : 'Book Appointment'}
+            {loading ? 'Booking…' : 'Book Appointment'}
           </button>
         </form>
       </section>
@@ -256,7 +212,4 @@ const inputStyle: React.CSSProperties = {
   border: '2px solid black',
   padding: '8px 10px',
   fontSize: 14,
-  outline: 'none',
-  width: '100%',
-  boxSizing: 'border-box',
 };
