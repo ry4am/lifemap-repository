@@ -2,11 +2,13 @@ import { prismaAppointments } from '@/lib/prismaAppointments';
 import { NextRequest, NextResponse } from 'next/server';
 import providersData from '@/data/providers.json';
 import OpenAI from 'openai';
+import sgMail from '@sendgrid/mail';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Provider type
+// ---- Provider & data setup ----
+
 type Provider = {
   provider_id: number;
   provider_name: string;
@@ -18,23 +20,34 @@ type Provider = {
 };
 
 const providers = providersData as Provider[];
+
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
 
-// OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Choose candidates by service type
+// ---- SendGrid setup ----
+
+const sendgridApiKey = process.env.SENDGRID_API_KEY;
+const sendgridFrom = process.env.SENDGRID_FROM_EMAIL;
+
+if (sendgridApiKey) {
+  sgMail.setApiKey(sendgridApiKey);
+} else {
+  console.warn('SENDGRID_API_KEY is not set – emails will not be sent.');
+}
+
+// ---- Helper: candidate providers for a service type ----
+
 function getCandidateProviders(serviceType: string) {
   const matches = providers.filter(p =>
     p.service_categories.includes(serviceType)
   );
-
   return matches.length ? matches : providers.filter(p => p.active);
 }
 
-// AI picks provider
+
 async function pickProviderWithAI(params: {
   title: string;
   serviceType: string;
@@ -72,24 +85,26 @@ async function pickProviderWithAI(params: {
     ],
   });
 
-  let parsed = {};
+  const content = completion.choices[0]?.message?.content || '{}';
+
+  let parsed: { provider_id?: number } = {};
   try {
-    parsed = JSON.parse(completion.choices[0]?.message?.content || '{}');
+    parsed = JSON.parse(content);
   } catch (e) {
-    console.error("AI provider selection parse error:", e);
+    console.error('AI provider selection parse error:', e, content);
   }
 
-  const selectedId = (parsed as any).provider_id;
+  const selectedId = parsed.provider_id;
   const selected = candidates.find(p => p.provider_id === selectedId);
-
   return selected ?? candidates[0];
 }
 
-// POST — Create appointment (NO EMAIL)
+// ---- POST /api/appointments ----
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { title, serviceType, date, time, location } = body;
+    const { title, serviceType, date, time, location, email } = body;
 
     if (!serviceType || !date || !time) {
       return NextResponse.json(
@@ -98,27 +113,70 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // AI chooses provider
+    // 1) AI chooses provider
     const provider = await pickProviderWithAI({
       title: title || '',
       serviceType,
       location: location || '',
     });
 
-    // Save appointment
+    // 2) Save appointment in DB
     const appointment = await prismaAppointments.appointment.create({
       data: {
         service: serviceType,
         suburb: location || provider.suburb || '',
-        day: date,
-        time,
+        day: date,                 // "YYYY-MM-DD"
+        time,                      // "HH:MM" 24h
         provider_id: String(provider.provider_id),
         provider_name: provider.provider_name,
         state: 'VIC',
       },
     });
 
-    return NextResponse.json({ ok: true, appointment }, { status: 201 });
+    // 3) Send confirmation email with SendGrid 
+    let emailStatus: string | null = null;
+
+    if (email && sendgridApiKey && sendgridFrom) {
+      try {
+        const msg = {
+          to: email,
+          from: sendgridFrom,
+          subject: 'Your LifeMap appointment has been booked',
+          html: `
+            <h2>Appointment Confirmed</h2>
+            <p>Hello,</p>
+            <p>Your appointment has been successfully booked.</p>
+
+            <h3>Details</h3>
+            <p><strong>Service:</strong> ${serviceType}</p>
+            <p><strong>Provider:</strong> ${provider.provider_name}</p>
+            <p><strong>Date:</strong> ${date}</p>
+            <p><strong>Time:</strong> ${time}</p>
+            <p><strong>Location:</strong> ${location || 'Not specified'}</p>
+
+            <br />
+            <p>Thank you for using LifeMap ❤️</p>
+          `,
+        };
+
+        const result = await sgMail.send(msg);
+        console.log('SendGrid result:', result);
+        emailStatus = 'sent';
+      } catch (err: any) {
+        console.error('SendGrid email error:', err);
+        emailStatus = `error: ${err?.message || 'unknown'}`;
+      }
+    } else if (!email) {
+      emailStatus = 'no-recipient';
+    } else if (!sendgridApiKey || !sendgridFrom) {
+      console.warn('SendGrid not fully configured – missing API key or FROM email.');
+      emailStatus = 'not-configured';
+    }
+
+    return NextResponse.json(
+      { ok: true, appointment, emailStatus },
+      { status: 201 }
+    );
   } catch (e: any) {
     console.error('appointments POST error:', e);
     return NextResponse.json(
@@ -128,7 +186,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET — List appointments
+// ---- GET /api/appointments ----
+
 export async function GET() {
   try {
     const appointments = await prismaAppointments.appointment.findMany({
@@ -138,7 +197,7 @@ export async function GET() {
 
     return NextResponse.json(appointments);
   } catch (e: any) {
-    console.error("appointments GET error:", e);
+    console.error('appointments GET error:', e);
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }

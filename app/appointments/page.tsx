@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import NavBar from '@/components/NavBar';
 import providersData from '@/data/providers.json';
 
-// Match providers.json
+// Match providers.json shape
 type Provider = {
   provider_id: number;
   provider_name: string;
@@ -43,7 +43,7 @@ export default function AppointmentsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
 
-  // Build clean unique service categories
+  // Build a unique, cleaned list of all service categories from JSON
   const allServiceCategories = useMemo(() => {
     const set = new Set<string>();
 
@@ -52,8 +52,11 @@ export default function AppointmentsPage() {
         if (!raw) continue;
         const clean = raw.trim();
         if (!clean) continue;
+
         const lc = clean.toLowerCase();
+
         if (lc.startsWith('or ') || lc.startsWith('and ')) continue;
+
         set.add(clean);
       }
     }
@@ -65,25 +68,49 @@ export default function AppointmentsPage() {
     e.preventDefault();
     setLoading(true);
 
-    await fetch('/api/appointments', {
+    const res = await fetch('/api/appointments', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        title: form.title,
+        title: form.title || form.serviceType || 'Appointment',
         serviceType: form.serviceType,
         date: form.date,
         time: form.time,
         location: form.location,
-        email: form.email, // backend ignores this now
+        email: form.email, // used by backend to send SendGrid email
       }),
     });
 
     setLoading(false);
-    alert('Appointment booked successfully');
+
+    const data = await res.json().catch(() => null);
+
+    if (res.ok) {
+      alert('Appointment booked successfully');
+      console.log('API response:', data);
+      setForm({
+        title: '',
+        serviceType: '',
+        date: '',
+        time: '',
+        location: '',
+        email: '',
+      });
+    } else {
+      alert(data?.error || 'Failed to create appointment');
+      console.error('Appointment error:', data);
+    }
   };
 
   return (
-    <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', width: '100%' }}>
+    <main
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100dvh',
+        width: '100%',
+      }}
+    >
       <NavBar />
 
       <section
@@ -108,26 +135,34 @@ export default function AppointmentsPage() {
             boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
             display: 'grid',
             gap: 12,
+            boxSizing: 'border-box',
           }}
         >
-          <h1>Book an Appointment</h1>
+          <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
+          <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
+            Tell LifeMap what you need help with and when. The AI will select the most suitable NDIS
+            provider for you, and you’ll receive a confirmation email.
+          </p>
 
+          {/* Title */}
           <label style={labelStyle}>
             Appointment title
             <input
               type="text"
+              placeholder="e.g. Plan Management review"
               value={form.title}
               onChange={update('title')}
               style={inputStyle}
             />
           </label>
 
+          {/* Service category */}
           <label style={labelStyle}>
             Service category
             <select
               value={form.serviceType}
               onChange={update('serviceType')}
-              style={inputStyle}
+              style={{ ...inputStyle, cursor: 'pointer' }}
               required
             >
               <option value="">Select a category…</option>
@@ -139,6 +174,7 @@ export default function AppointmentsPage() {
             </select>
           </label>
 
+          {/* Date & time */}
           <div style={{ display: 'flex', gap: 12 }}>
             <label style={{ ...labelStyle, flex: 1 }}>
               Date
@@ -147,6 +183,7 @@ export default function AppointmentsPage() {
                 value={form.date}
                 onChange={update('date')}
                 style={inputStyle}
+                required
               />
             </label>
             <label style={{ ...labelStyle, flex: 1 }}>
@@ -156,40 +193,50 @@ export default function AppointmentsPage() {
                 value={form.time}
                 onChange={update('time')}
                 style={inputStyle}
+                required
               />
             </label>
           </div>
 
+          {/* Location */}
           <label style={labelStyle}>
-            Location
+            Location (suburb or notes)
             <input
               type="text"
+              placeholder="e.g. Melbourne, home visit, Telehealth"
               value={form.location}
               onChange={update('location')}
               style={inputStyle}
             />
           </label>
 
+          {/* Email */}
           <label style={labelStyle}>
-            Email address (unused)
+            Email address for confirmation
             <input
               type="email"
+              placeholder="your@email.com"
               value={form.email}
               onChange={update('email')}
+              required
               style={inputStyle}
             />
           </label>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
             style={{
+              marginTop: 8,
               padding: '10px 16px',
               borderRadius: 16,
               border: '2px solid black',
               background: '#59C3FF',
               fontWeight: 700,
               cursor: 'pointer',
+              width: '100%',
+              boxSizing: 'border-box',
             }}
           >
             {loading ? 'Booking…' : 'Book Appointment'}
@@ -212,4 +259,7 @@ const inputStyle: React.CSSProperties = {
   border: '2px solid black',
   padding: '8px 10px',
   fontSize: 14,
+  outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box',
 };
