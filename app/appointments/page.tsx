@@ -41,15 +41,25 @@ export default function AppointmentsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
 
-  // Build a unique sorted list of all service categories from JSON
+  // Build a unique, cleaned list of all service categories from JSON
   const allServiceCategories = useMemo(() => {
     const set = new Set<string>();
+
     for (const p of providers) {
-      for (const cat of p.service_categories) {
-        const clean = cat?.trim();
-        if (clean) set.add(clean);
+      for (const raw of p.service_categories) {
+        if (!raw) continue;
+        const clean = raw.trim();
+        if (!clean) continue;
+
+        const lc = clean.toLowerCase();
+
+        // Heuristic: skip fragments like "or education", "or maintain employment and"
+        if (lc.startsWith('or ') || lc.startsWith('and ')) continue;
+
+        set.add(clean);
       }
     }
+
     return Array.from(set).sort();
   }, []);
 
@@ -66,6 +76,7 @@ export default function AppointmentsPage() {
         date: form.date,      // "YYYY-MM-DD"
         time: form.time,      // "HH:MM" 24h
         location: form.location,
+        // provider chosen by AI on the server
       }),
     });
 
@@ -182,7 +193,7 @@ export default function AppointmentsPage() {
             </label>
           </div>
 
-          {/* Notes / location */}
+          {/* Location / notes */}
           <label style={labelStyle}>
             Location (suburb or notes)
             <input

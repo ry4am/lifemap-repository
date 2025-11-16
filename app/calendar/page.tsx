@@ -6,7 +6,7 @@ import NavBar from '@/components/NavBar';
 type Appointment = {
   id: number;
   service: string;
-  suburb: string;      // using as location
+  suburb: string;      // using as location / notes
   day: string;         // "YYYY-MM-DD"
   time: string;        // "HH:MM"
   provider_name: string;
@@ -63,7 +63,6 @@ export default function CalendarPage() {
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
   const daysInMonth = lastDayOfMonth.getDate();
-
   const startWeekDay = firstDayOfMonth.getDay(); // 0-6
 
   const weeks: { date: Date | null }[][] = [];
@@ -97,7 +96,7 @@ export default function CalendarPage() {
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  // Helper to build local "YYYY-MM-DD" (no UTC conversion)
+  // Helper to build local YYYY-MM-DD string (no UTC shift)
   const toLocalDateKey = (d: Date) => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -190,7 +189,7 @@ export default function CalendarPage() {
 
                 const d = cell.date;
                 const dayNum = d.getDate();
-                const dateKey = toLocalDateKey(d); // 👈 local date key
+                const dateKey = toLocalDateKey(d);
                 const dayAppointments = appointmentsByDate[dateKey] || [];
 
                 return (
@@ -208,25 +207,41 @@ export default function CalendarPage() {
                   >
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>{dayNum}</div>
 
-                    {dayAppointments.slice(0, 3).map(appt => (
-                      <div key={appt.id} style={{ marginBottom: 2, lineHeight: 1.2 }}>
-                        <span style={{ color: '#2563eb', fontWeight: 600 }}>
-                          {appt.service}
-                        </span>
-                        {appt.suburb && (
-                          <span style={{ color: '#16a34a' }}>
-                            {' · '}
-                            {appt.suburb}
+                    {dayAppointments.slice(0, 3).map(appt => {
+                      const tooltip = [
+                        `Service: ${appt.service}`,
+                        `Provider: ${appt.provider_name || 'N/A'}`,
+                        `Time: ${appt.time || 'N/A'}`,
+                        appt.suburb ? `Location: ${appt.suburb}` : '',
+                        `Date: ${appt.day}`,
+                      ]
+                        .filter(Boolean)
+                        .join('\n');
+
+                      return (
+                        <div
+                          key={appt.id}
+                          title={tooltip}
+                          style={{ marginBottom: 2, lineHeight: 1.2, cursor: 'help' }}
+                        >
+                          <span style={{ color: '#2563eb', fontWeight: 600 }}>
+                            {appt.service}
                           </span>
-                        )}
-                        {appt.time && (
-                          <span style={{ color: '#000' }}>
-                            {' · '}
-                            {appt.time}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                          {appt.provider_name && (
+                            <span style={{ color: '#111' }}>
+                              {' · '}
+                              {appt.provider_name}
+                            </span>
+                          )}
+                          {appt.time && (
+                            <span style={{ color: '#000' }}>
+                              {' · '}
+                              {appt.time}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
 
                     {dayAppointments.length > 3 && (
                       <span style={{ fontSize: 10, opacity: 0.7 }}>
@@ -243,9 +258,7 @@ export default function CalendarPage() {
           <div style={{ marginTop: 12, fontSize: 12 }}>
             <strong>Legend:</strong>{' '}
             <span style={{ color: '#2563eb' }}>Blue = Service Type</span>{' '}
-            <span style={{ color: 'red', marginLeft: 8 }}>Red = Urgent</span>{' '}
-            <span style={{ color: '#16a34a', marginLeft: 8 }}>Green = Location</span>{' '}
-            <span style={{ marginLeft: 8 }}>Black = Time / Standard Task</span>
+            <span style={{ marginLeft: 8 }}>Black = Provider / Time</span>
           </div>
         </div>
       </section>
