@@ -17,14 +17,15 @@ export default function NavBar() {
     position: "fixed",
     right: "24px",
     bottom: "24px",
-    width: "56px",
-    height: "56px",
+    width: "80px",
+    height: "80px",
     borderRadius: "999px",
     border: "2px solid black",
-    background: "white",
+    background: "#FDE1E1", // light red
     cursor: "pointer",
     fontWeight: 700,
-    boxShadow: "0 8px 16px rgba(0, 0, 0, 0.25)",
+    fontSize: "16px",
+    boxShadow: "0 10px 22px rgba(0, 0, 0, 0.3)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -87,7 +88,7 @@ export default function NavBar() {
         onClick={() => setShowAskAi(true)}
         aria-label="Open Ask AI"
       >
-        AI
+        Ask Ai
       </button>
 
       {showAskAi && <AskAiPanel onClose={() => setShowAskAi(false)} />}
