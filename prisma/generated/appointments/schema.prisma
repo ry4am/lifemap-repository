@@ -1,0 +1,29 @@
+// prisma/appointments.schema.prisma
+// Appointments database (separate Neon DB)
+
+datasource db {
+  provider = "postgresql"
+  // Neon connection string for lifemap-appointments
+  url      = env("DATABASE_URL_APPOINTMENTS")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  // Generate a separate client into prisma/generated/appointments
+  output   = "./generated/appointments"
+}
+
+model Appointment {
+  id            Int      @id @default(autoincrement())
+  service       String
+  suburb        String
+  day           String // or DateTime if you later want a real date
+  time          String // or DateTime / Time type if you change schema
+  provider_id   String
+  provider_name String
+  state         String // currently you're using this for "VIC"
+  created_at    DateTime @default(now())
+
+  // which user booked this appointment
+  user_email String?
+}
