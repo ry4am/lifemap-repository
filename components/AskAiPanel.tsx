@@ -35,21 +35,28 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "en-AU"; // tweak if you like
-    recognition.interimResults = true;
+    recognition.lang = "en-AU";          // tweak if you like
+    recognition.interimResults = false;  // ✅ only final result
     recognition.continuous = false;
 
     // NOTE: event typed as `any` so TS doesn't complain in Next build
     recognition.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript + " ";
+      // take only the last (final) result
+      const lastIndex = event.results.length - 1;
+      const result = event.results[lastIndex];
+      if (!result || !result[0]) return;
+
+      const transcript = result[0].transcript.trim();
+      if (!transcript) return;
+
+      setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+
+      // stop after we’ve got a final result
+      try {
+        recognition.stop();
+      } catch (err) {
+        console.error("Failed to stop recognition:", err);
       }
-
-      const cleaned = transcript.trim();
-      if (!cleaned) return;
-
-      setInput((prev) => (prev ? `${prev} ${cleaned}` : cleaned));
     };
 
     recognition.onerror = (event: any) => {
@@ -82,6 +89,23 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
       recognition.stop();
       setIsListening(false);
     }
+  };
+
+  // Text-to-speech for assistant replies
+  const speakText = (text: string) => {
+    if (typeof window === "undefined") return;
+
+    const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined;
+    if (!synth) {
+      alert("Text-to-speech is not supported in this browser.");
+      return;
+    }
+
+    synth.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-AU";
+    utterance.rate = 1;
+    synth.speak(utterance);
   };
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -162,7 +186,21 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
               <div className="msg-label">
                 {m.role === "user" ? "You" : "LifeMap AI"}
               </div>
-              <div className="msg-bubble">{m.content}</div>
+
+              {/* bubble + optional listen button */}
+              <div className="msg-row">
+                <div className="msg-bubble">{m.content}</div>
+                {m.role === "assistant" && (
+                  <button
+                    type="button"
+                    className="msg-listen-button"
+                    onClick={() => speakText(m.content)}
+                    aria-label="Listen to this response"
+                  >
+                    🔊
+                  </button>
+                )}
+              </div>
             </div>
           ))}
 
@@ -313,12 +351,19 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
           color: #9ca3af;
         }
 
+        .msg-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 6px;
+        }
+
         .msg-bubble {
           padding: 8px 10px;
           border-radius: 10px;
           font-size: 0.9rem;
           line-height: 1.4;
           white-space: pre-wrap;
+          max-width: 100%;
         }
 
         .msg-user .msg-bubble {
@@ -330,6 +375,23 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
         .msg-assistant .msg-bubble {
           background: #111827;
           border: 1px solid #1f2937;
+        }
+
+        .msg-listen-button {
+          border: none;
+          background: transparent;
+          color: #9ca3af;
+          cursor: pointer;
+          font-size: 1.1rem;
+          padding: 4px;
+          border-radius: 999px;
+          transition: background 0.15s, color 0.15s;
+          flex-shrink: 0;
+        }
+
+        .msg-listen-button:hover {
+          background: #1f2933;
+          color: #e5e7eb;
         }
 
         .askai-error {
