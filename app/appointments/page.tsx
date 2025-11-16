@@ -4,12 +4,15 @@ import { useMemo, useState } from 'react';
 import NavBar from '@/components/NavBar';
 import providersData from '@/data/providers.json';
 
+// Match the JSON shape
 type Provider = {
-  id: string;
+  provider_id: number;
   provider_name: string;
-  service_categories: string[];   // 👈 UPDATED
   suburb: string;
-  state: string;
+  service_categories: string[];
+  phone: string | null;
+  email: string | null;
+  active: boolean;
 };
 
 const providers = providersData as Provider[];
@@ -39,13 +42,24 @@ export default function AppointmentsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
 
-  // Filter providers by service type using service_categories[]
+  // Build a unique list of all service categories from the JSON
+  const allServiceCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of providers) {
+      for (const cat of p.service_categories) {
+        if (cat && cat.trim()) {
+          set.add(cat.trim());
+        }
+      }
+    }
+    return Array.from(set).sort();
+  }, []);
+
+  // Filter providers by selected service type (exact category match)
   const filteredProviders = useMemo(() => {
     if (!form.serviceType) return providers;
     return providers.filter(p =>
-      p.service_categories.some(cat =>
-        cat.toLowerCase() === form.serviceType.toLowerCase()
-      )
+      p.service_categories.includes(form.serviceType)
     );
   }, [form.serviceType]);
 
@@ -53,7 +67,9 @@ export default function AppointmentsPage() {
     e.preventDefault();
     setLoading(true);
 
-    const provider = providers.find(p => p.id === selectedProviderId);
+    const provider = providers.find(
+      p => p.provider_id === Number(selectedProviderId)
+    );
 
     const res = await fetch('/api/appointments', {
       method: 'POST',
@@ -64,8 +80,8 @@ export default function AppointmentsPage() {
         date: form.date,
         time: form.time,
         location: form.location,
-        providerId: provider?.id ?? '',
-        providerName: provider?.provider_name ?? '',
+        providerId: provider ? provider.provider_id : '',
+        providerName: provider ? provider.provider_name : '',
       }),
     });
 
@@ -116,34 +132,37 @@ export default function AppointmentsPage() {
           }}
         >
           <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
+          <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
+            Choose a service category, pick a provider from the NDIS list, and set the date and time.
+          </p>
 
           {/* Title */}
           <label style={labelStyle}>
             Appointment title
             <input
               type="text"
-              placeholder="e.g. Speech therapy session"
+              placeholder="e.g. Plan Management review"
               value={form.title}
               onChange={update('title')}
               style={inputStyle}
             />
           </label>
 
-          {/* Service type */}
+          {/* Service type from JSON categories */}
           <label style={labelStyle}>
-            Service type
+            Service category
             <select
               value={form.serviceType}
               onChange={update('serviceType')}
               style={{ ...inputStyle, cursor: 'pointer' }}
               required
             >
-              <option value="">Select a service…</option>
-              <option value="Support Worker">Support Worker</option>
-              <option value="Daily Tasks">Daily Tasks</option>
-              <option value="Speech Therapy">Speech Therapy</option>
-              <option value="Occupational Therapy">Occupational Therapy</option>
-              <option value="Community Participation">Community Participation</option>
+              <option value="">Select a category…</option>
+              {allServiceCategories.map(cat => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -176,7 +195,7 @@ export default function AppointmentsPage() {
             Location (optional notes)
             <input
               type="text"
-              placeholder="e.g. Home visit, Telehealth"
+              placeholder="e.g. Telehealth, home visit"
               value={form.location}
               onChange={update('location')}
               style={inputStyle}
@@ -194,8 +213,8 @@ export default function AppointmentsPage() {
             >
               <option value="">Select a provider…</option>
               {filteredProviders.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.provider_name} – {p.suburb}, {p.state} ({p.service_categories.join(', ')})
+                <option key={p.provider_id} value={String(p.provider_id)}>
+                  {p.provider_name} – {p.suburb} ({p.service_categories.join(', ')})
                 </option>
               ))}
             </select>
