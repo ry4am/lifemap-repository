@@ -5,6 +5,9 @@ import { useSession } from 'next-auth/react';
 import NavBar from '@/components/NavBar';
 import providersData from '@/data/providers.json';
 
+// Avoid static prerender issues
+export const dynamic = 'force-dynamic';
+
 // Match providers.json shape
 type Provider = {
   provider_id: number;
@@ -27,7 +30,11 @@ type FormState = {
 };
 
 export default function AppointmentsPage() {
-  const { data: session, status } = useSession();
+  // ❗ UseSession defensively – don't destructure directly
+  const sessionResult = useSession();
+  const session = sessionResult?.data;
+  const status = sessionResult?.status ?? 'unauthenticated';
+
   const [form, setForm] = useState<FormState>({
     title: '',
     serviceType: '',
@@ -72,7 +79,6 @@ export default function AppointmentsPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Block submit if not logged in
     if (!isAuthenticated) {
       alert('Please log in to book an appointment.');
       return;
@@ -147,7 +153,8 @@ export default function AppointmentsPage() {
               padding: 12,
               borderRadius: 16,
               border: '1px solid #ddd',
-              background: isAuthenticated ? '#ecfdf5' : '#fef2f2',
+              background:
+                status === 'authenticated' ? '#ecfdf5' : status === 'loading' ? '#eff6ff' : '#fef2f2',
               fontSize: 14,
             }}
           >
@@ -160,7 +167,7 @@ export default function AppointmentsPage() {
               </span>
             )}
 
-            {isAuthenticated && (
+            {status === 'authenticated' && (
               <span>
                 Booking as{' '}
                 <strong>
