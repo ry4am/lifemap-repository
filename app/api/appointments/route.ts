@@ -1,13 +1,16 @@
-import { prismaAppointments } from '@/lib/prismaAppointments';
 import { NextRequest, NextResponse } from 'next/server';
-import providersData from '@/data/providers.json';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import OpenAI from 'openai';
 import sgMail from '@sendgrid/mail';
+
+import { prismaAppointments } from '@/lib/prismaAppointments';
+import providersData from '@/data/providers.json';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// ---- Provider & data setup ----
+// ---------- Types & data ----------
 
 type Provider = {
   provider_id: number;
@@ -27,7 +30,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// ---- SendGrid setup ----
+// ---------- SendGrid setup ----------
 
 const sendgridApiKey = process.env.SENDGRID_API_KEY;
 const sendgridFrom = process.env.SENDGRID_FROM_EMAIL;
@@ -35,19 +38,21 @@ const sendgridFrom = process.env.SENDGRID_FROM_EMAIL;
 if (sendgridApiKey) {
   sgMail.setApiKey(sendgridApiKey);
 } else {
-  console.warn('SENDGRID_API_KEY is not set – emails will not be sent.');
+  console.warn('SENDGRID_API_KEY is not set – appointment emails will not be sent.');
 }
 
-// ---- Helper: candidate providers for a service type ----
+// ---------- Helpers ----------
 
+// Filter providers by service type
 function getCandidateProviders(serviceType: string) {
   const matches = providers.filter(p =>
     p.service_categories.includes(serviceType)
   );
+
   return matches.length ? matches : providers.filter(p => p.active);
 }
 
-
+// Ask OpenAI to choose the best provider
 async function pickProviderWithAI(params: {
   title: string;
   serviceType: string;
@@ -99,12 +104,27 @@ async function pickProviderWithAI(params: {
   return selected ?? candidates[0];
 }
 
-// ---- POST /api/appointments ----
+// ---------- POST /api/appointments ----------
+// Creates appointment, AI picks provider, SendGrid emails NextAuth user
 
 export async function POST(req: NextRequest) {
   try {
+    // 1) Get current session via NextAuth
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.email) {
+      return NextResponse.json(
+        { ok: false, error: 'Not authenticated or email missing from session' },
+        { status: 401 }
+      );
+    }
+
+    const recipientEmail = session.user.email;
+    const recipientName = session.user.name || '';
+
+    // 2) Read appointment data from request body
     const body = await req.json();
-    const { title, serviceType, date, time, location, email } = body;
+    const { title, serviceType, date, time, location } = body;
 
     if (!serviceType || !date || !time) {
       return NextResponse.json(
@@ -113,14 +133,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1) AI chooses provider
+    // 3) AI chooses provider
     const provider = await pickProviderWithAI({
       title: title || '',
       serviceType,
       location: location || '',
     });
 
-    // 2) Save appointment in DB
+    // 4) Save appointment in appointments DB
     const appointment = await prismaAppointments.appointment.create({
       data: {
         service: serviceType,
@@ -133,18 +153,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 3) Send confirmation email with SendGrid 
+    // 5) Send confirmation email to the logged-in user
     let emailStatus: string | null = null;
 
-    if (email && sendgridApiKey && sendgridFrom) {
+    if (sendgridApiKey && sendgridFrom) {
       try {
         const msg = {
-          to: email,
+          to: recipientEmail,
           from: sendgridFrom,
           subject: 'Your LifeMap appointment has been booked',
           html: `
             <h2>Appointment Confirmed</h2>
-            <p>Hello,</p>
+            <p>Hi ${recipientName ? recipientName + ',' : ''}</p>
             <p>Your appointment has been successfully booked.</p>
 
             <h3>Details</h3>
@@ -166,10 +186,8 @@ export async function POST(req: NextRequest) {
         console.error('SendGrid email error:', err);
         emailStatus = `error: ${err?.message || 'unknown'}`;
       }
-    } else if (!email) {
-      emailStatus = 'no-recipient';
-    } else if (!sendgridApiKey || !sendgridFrom) {
-      console.warn('SendGrid not fully configured – missing API key or FROM email.');
+    } else {
+      console.warn('SendGrid not configured (missing API key or FROM email).');
       emailStatus = 'not-configured';
     }
 
@@ -186,7 +204,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ---- GET /api/appointments ----
+// ---------- GET /api/appointments ----------
 
 export async function GET() {
   try {
