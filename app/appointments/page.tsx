@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import NavBar from '@/components/NavBar';
 import providersData from '@/data/providers.json';
 
@@ -23,20 +24,23 @@ type FormState = {
   date: string;
   time: string;
   location: string;
-  email: string;
 };
 
 export default function AppointmentsPage() {
+  const { data: session, status } = useSession();
   const [form, setForm] = useState<FormState>({
     title: '',
     serviceType: '',
     date: '',
     time: '',
     location: '',
-    email: '',
   });
 
   const [loading, setLoading] = useState(false);
+
+  const loggedInEmail = session?.user?.email ?? '';
+  const loggedInName = session?.user?.name ?? '';
+  const isAuthenticated = status === 'authenticated';
 
   const update =
     (k: keyof FormState) =>
@@ -55,6 +59,7 @@ export default function AppointmentsPage() {
 
         const lc = clean.toLowerCase();
 
+        // Skip fragments like "or education", "or maintain employment"
         if (lc.startsWith('or ') || lc.startsWith('and ')) continue;
 
         set.add(clean);
@@ -66,6 +71,13 @@ export default function AppointmentsPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Block submit if not logged in
+    if (!isAuthenticated) {
+      alert('Please log in to book an appointment.');
+      return;
+    }
+
     setLoading(true);
 
     const res = await fetch('/api/appointments', {
@@ -77,16 +89,16 @@ export default function AppointmentsPage() {
         date: form.date,
         time: form.time,
         location: form.location,
-        email: form.email, // used by backend to send SendGrid email
       }),
     });
 
+    const data = await res.json().catch(() => null);
     setLoading(false);
 
-    const data = await res.json().catch(() => null);
-
     if (res.ok) {
-      alert('Appointment booked successfully');
+      alert(
+        'Appointment booked successfully. A confirmation email has been sent to your account email.'
+      );
       console.log('API response:', data);
       setForm({
         title: '',
@@ -94,7 +106,6 @@ export default function AppointmentsPage() {
         date: '',
         time: '',
         location: '',
-        email: '',
       });
     } else {
       alert(data?.error || 'Failed to create appointment');
@@ -123,125 +134,158 @@ export default function AppointmentsPage() {
           background: '#f5f7fb',
         }}
       >
-        <form
-          onSubmit={onSubmit}
+        <div
           style={{
             width: '100%',
             maxWidth: 600,
-            borderRadius: 24,
-            border: '2px solid black',
-            background: 'white',
-            padding: 24,
-            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
-            display: 'grid',
-            gap: 12,
-            boxSizing: 'border-box',
           }}
         >
-          <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
-          <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
-            Tell LifeMap what you need help with and when. The AI will select the most suitable NDIS
-            provider for you, and you’ll receive a confirmation email.
-          </p>
+          {/* Session banner */}
+          <div
+            style={{
+              marginBottom: 16,
+              padding: 12,
+              borderRadius: 16,
+              border: '1px solid #ddd',
+              background: isAuthenticated ? '#ecfdf5' : '#fef2f2',
+              fontSize: 14,
+            }}
+          >
+            {status === 'loading' && <span>Checking your session…</span>}
 
-          {/* Title */}
-          <label style={labelStyle}>
-            Appointment title
-            <input
-              type="text"
-              placeholder="e.g. Plan Management review"
-              value={form.title}
-              onChange={update('title')}
-              style={inputStyle}
-            />
-          </label>
+            {status === 'unauthenticated' && (
+              <span>
+                You are not logged in. Please sign in to book appointments so we can email your
+                confirmation to your account.
+              </span>
+            )}
 
-          {/* Service category */}
-          <label style={labelStyle}>
-            Service category
-            <select
-              value={form.serviceType}
-              onChange={update('serviceType')}
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              required
-            >
-              <option value="">Select a category…</option>
-              {allServiceCategories.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Date & time */}
-          <div style={{ display: 'flex', gap: 12 }}>
-            <label style={{ ...labelStyle, flex: 1 }}>
-              Date
-              <input
-                type="date"
-                value={form.date}
-                onChange={update('date')}
-                style={inputStyle}
-                required
-              />
-            </label>
-            <label style={{ ...labelStyle, flex: 1 }}>
-              Time
-              <input
-                type="time"
-                value={form.time}
-                onChange={update('time')}
-                style={inputStyle}
-                required
-              />
-            </label>
+            {isAuthenticated && (
+              <span>
+                Booking as{' '}
+                <strong>
+                  {loggedInName ? `${loggedInName} (${loggedInEmail})` : loggedInEmail}
+                </strong>
+                .
+                <span style={{ marginLeft: 6, opacity: 0.8 }}>
+                  Your confirmation will be sent to this email.
+                </span>
+              </span>
+            )}
           </div>
 
-          {/* Location */}
-          <label style={labelStyle}>
-            Location (suburb or notes)
-            <input
-              type="text"
-              placeholder="e.g. Melbourne, home visit, Telehealth"
-              value={form.location}
-              onChange={update('location')}
-              style={inputStyle}
-            />
-          </label>
-
-          {/* Email */}
-          <label style={labelStyle}>
-            Email address for confirmation
-            <input
-              type="email"
-              placeholder="your@email.com"
-              value={form.email}
-              onChange={update('email')}
-              required
-              style={inputStyle}
-            />
-          </label>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
+          {/* Form card */}
+          <form
+            onSubmit={onSubmit}
             style={{
-              marginTop: 8,
-              padding: '10px 16px',
-              borderRadius: 16,
-              border: '2px solid black',
-              background: '#59C3FF',
-              fontWeight: 700,
-              cursor: 'pointer',
               width: '100%',
+              borderRadius: 24,
+              border: '2px solid black',
+              background: 'white',
+              padding: 24,
+              boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+              display: 'grid',
+              gap: 12,
               boxSizing: 'border-box',
             }}
           >
-            {loading ? 'Booking…' : 'Book Appointment'}
-          </button>
-        </form>
+            <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
+            <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
+              Tell LifeMap what you need help with and when. The AI will select the most suitable
+              NDIS provider, and a confirmation email will be sent to the email on your LifeMap
+              account.
+            </p>
+
+            {/* Title */}
+            <label style={labelStyle}>
+              Appointment title
+              <input
+                type="text"
+                placeholder="e.g. Plan Management review"
+                value={form.title}
+                onChange={update('title')}
+                style={inputStyle}
+              />
+            </label>
+
+            {/* Service category */}
+            <label style={labelStyle}>
+              Service category
+              <select
+                value={form.serviceType}
+                onChange={update('serviceType')}
+                style={{ ...inputStyle, cursor: 'pointer' }}
+                required
+              >
+                <option value="">Select a category…</option>
+                {allServiceCategories.map(cat => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {/* Date & time */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <label style={{ ...labelStyle, flex: 1 }}>
+                Date
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={update('date')}
+                  style={inputStyle}
+                  required
+                />
+              </label>
+              <label style={{ ...labelStyle, flex: 1 }}>
+                Time
+                <input
+                  type="time"
+                  value={form.time}
+                  onChange={update('time')}
+                  style={inputStyle}
+                  required
+                />
+              </label>
+            </div>
+
+            {/* Location */}
+            <label style={labelStyle}>
+              Location (suburb or notes)
+              <input
+                type="text"
+                placeholder="e.g. Melbourne, home visit, Telehealth"
+                value={form.location}
+                onChange={update('location')}
+                style={inputStyle}
+              />
+            </label>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading || !isAuthenticated}
+              style={{
+                marginTop: 8,
+                padding: '10px 16px',
+                borderRadius: 16,
+                border: '2px solid black',
+                background: !isAuthenticated ? '#d4d4d4' : '#59C3FF',
+                fontWeight: 700,
+                cursor: !isAuthenticated ? 'not-allowed' : 'pointer',
+                width: '100%',
+                boxSizing: 'border-box',
+              }}
+            >
+              {loading
+                ? 'Booking…'
+                : !isAuthenticated
+                ? 'Log in to book'
+                : 'Book Appointment'}
+            </button>
+          </form>
+        </div>
       </section>
     </main>
   );
