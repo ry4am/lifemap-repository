@@ -2,11 +2,10 @@ import { prismaAppointments } from '@/lib/prismaAppointments';
 import { NextRequest, NextResponse } from 'next/server';
 import providersData from '@/data/providers.json';
 import OpenAI from 'openai';
+import { Resend } from 'resend';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-// ---- Provider + OpenAI setup ----
 
 type Provider = {
   provider_id: number;
@@ -19,40 +18,34 @@ type Provider = {
 };
 
 const providers = providersData as Provider[];
-
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY is not set');
-}
-
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Choose candidates by service category
+const resend = new Resend(process.env.RESEND_API_KEY!);
+
+// -------------------------------------------------------
+// Helper: choose candidate providers
+// -------------------------------------------------------
 function getCandidateProviders(serviceType: string) {
   const matches = providers.filter(p =>
     p.service_categories.includes(serviceType)
   );
-  if (matches.length > 0) return matches;
-  // Fallback: if no direct match, just return all active providers
-  return providers.filter(p => p.active) || providers;
+  return matches.length ? matches : providers.filter(p => p.active);
 }
 
+// -------------------------------------------------------
+// Helper: AI picks provider
+// -------------------------------------------------------
 async function pickProviderWithAI(params: {
   title: string;
   serviceType: string;
   location: string;
 }) {
   const { title, serviceType, location } = params;
-
-  const candidates = getCandidateProviders(serviceType).slice(0, 25); // cap to 25 for prompt size
-
-  // If for some reason we have no providers, bail out
-  if (candidates.length === 0) {
-    throw new Error('No providers available to choose from');
-  }
+  const candidates = getCandidateProviders(serviceType).slice(0, 25);
 
   const providerSummary = candidates.map(p => ({
     provider_id: p.provider_id,
@@ -68,9 +61,7 @@ async function pickProviderWithAI(params: {
       {
         role: 'system',
         content:
-          'You are helping match NDIS participants to providers. ' +
-          'Given a user request and a list of candidate providers, ' +
-          'choose the single most suitable provider_id. Return a JSON object like {"provider_id": 12345}.',
+          'Choose the single best provider_id from the list based on relevance. Return JSON: {"provider_id": 123}.'
       },
       {
         role: 'user',
@@ -80,38 +71,24 @@ async function pickProviderWithAI(params: {
           location,
           candidates: providerSummary,
         }),
-      },
+      }
     ],
   });
 
-  const content = completion.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error('No response from OpenAI when selecting provider');
-  }
-
   let parsed: { provider_id?: number } = {};
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw new Error('Failed to parse OpenAI provider selection');
-  }
+  parsed = JSON.parse(completion.choices[0]?.message?.content || '{}');
 
-  const selectedId = parsed.provider_id;
-  if (!selectedId) {
-    throw new Error('OpenAI did not return a provider_id');
-  }
-
-  const selected = candidates.find(p => p.provider_id === selectedId);
+  const selected = candidates.find(p => p.provider_id === parsed.provider_id);
   return selected ?? candidates[0];
 }
 
-// ---- API handlers ----
-
+// -------------------------------------------------------
+// POST /api/appointments
+// -------------------------------------------------------
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-
-    const { title, serviceType, date, time, location } = body;
+    const { title, serviceType, date, time, location, email } = body;
 
     if (!serviceType || !date || !time) {
       return NextResponse.json(
@@ -120,34 +97,52 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Ask AI to pick the best provider
+    // 1. AI picks provider
     const provider = await pickProviderWithAI({
       title: title || '',
       serviceType,
       location: location || '',
     });
 
-    const service = serviceType;
-    const day = date; 
-    const suburb = location || provider.suburb || '';
-    const state = 'VIC'; 
-
-    const provider_id = String(provider.provider_id);
-    const provider_name = provider.provider_name;
-
+    // 2. Save appointment
     const appointment = await prismaAppointments.appointment.create({
       data: {
-        service,
-        suburb,
-        day,
-        time,          
-        provider_id,
-        provider_name,
-        state,
+        service: serviceType,
+        suburb: location || provider.suburb || '',
+        day: date,
+        time,
+        provider_id: String(provider.provider_id),
+        provider_name: provider.provider_name,
+        state: 'VIC',
       },
     });
 
+    // 3. Send confirmation email using Resend
+    if (email) {
+      await resend.emails.send({
+        from: process.env.FROM_EMAIL!,
+        to: email,
+        subject: `Your appointment has been booked`,
+        html: `
+          <h2>Appointment Confirmed</h2>
+          <p>Hello,</p>
+          <p>Your appointment has been successfully booked.</p>
+
+          <h3>Details</h3>
+          <p><strong>Service:</strong> ${serviceType}</p>
+          <p><strong>Provider:</strong> ${provider.provider_name}</p>
+          <p><strong>Date:</strong> ${date}</p>
+          <p><strong>Time:</strong> ${time}</p>
+          <p><strong>Location:</strong> ${location || 'Not specified'}</p>
+
+          <br />
+          <p>Thank you for using LifeMap ❤️</p>
+        `,
+      });
+    }
+
     return NextResponse.json({ ok: true, appointment }, { status: 201 });
+
   } catch (e: any) {
     console.error('appointments POST error:', e);
     return NextResponse.json(
@@ -157,7 +152,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/appointments  -> list recent appointments
+// -------------------------------------------------------
+// GET /api/appointments
+// -------------------------------------------------------
 export async function GET() {
   try {
     const appointments = await prismaAppointments.appointment.findMany({
@@ -167,7 +164,6 @@ export async function GET() {
 
     return NextResponse.json(appointments);
   } catch (e: any) {
-    console.error('appointments GET error:', e);
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }
