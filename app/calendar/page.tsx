@@ -46,11 +46,11 @@ export default function CalendarPage() {
     fetchAppointments();
   }, []);
 
-  // Group them by day
+  // Group them by day string "YYYY-MM-DD"
   const appointmentsByDate = useMemo(() => {
     const map: Record<string, Appointment[]> = {};
     for (const appt of appointments) {
-      const key = appt.day; // already "YYYY-MM-DD"
+      const key = appt.day;
       if (!map[key]) map[key] = [];
       map[key].push(appt);
     }
@@ -96,6 +96,14 @@ export default function CalendarPage() {
   });
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  // Helper to build local "YYYY-MM-DD" (no UTC conversion)
+  const toLocalDateKey = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
 
   return (
     <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
@@ -182,7 +190,7 @@ export default function CalendarPage() {
 
                 const d = cell.date;
                 const dayNum = d.getDate();
-                const dateKey = d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+                const dateKey = toLocalDateKey(d); // 👈 local date key
                 const dayAppointments = appointmentsByDate[dateKey] || [];
 
                 return (
@@ -206,10 +214,16 @@ export default function CalendarPage() {
                           {appt.service}
                         </span>
                         {appt.suburb && (
-                          <span style={{ color: '#16a34a' }}>{' · '}{appt.suburb}</span>
+                          <span style={{ color: '#16a34a' }}>
+                            {' · '}
+                            {appt.suburb}
+                          </span>
                         )}
                         {appt.time && (
-                          <span style={{ color: '#000' }}>{' · '}{appt.time}</span>
+                          <span style={{ color: '#000' }}>
+                            {' · '}
+                            {appt.time}
+                          </span>
                         )}
                       </div>
                     ))}
