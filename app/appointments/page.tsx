@@ -23,6 +23,7 @@ type FormState = {
   date: string;
   time: string;
   location: string;
+  email: string;   // <--- added
 };
 
 export default function AppointmentsPage() {
@@ -32,6 +33,7 @@ export default function AppointmentsPage() {
     date: '',
     time: '',
     location: '',
+    email: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,7 @@ export default function AppointmentsPage() {
 
         const lc = clean.toLowerCase();
 
-        // Heuristic: skip fragments like "or education", "or maintain employment and"
+        // Skip fragments like "or education", "or maintain employment"
         if (lc.startsWith('or ') || lc.startsWith('and ')) continue;
 
         set.add(clean);
@@ -74,9 +76,9 @@ export default function AppointmentsPage() {
         title: form.title || form.serviceType || 'Appointment',
         serviceType: form.serviceType,
         date: form.date,      // "YYYY-MM-DD"
-        time: form.time,      // "HH:MM" 24h
+        time: form.time,      // "HH:MM"
         location: form.location,
-        // provider chosen by AI on the server
+        email: form.email,    // <---- send email to backend
       }),
     });
 
@@ -90,6 +92,7 @@ export default function AppointmentsPage() {
         date: '',
         time: '',
         location: '',
+        email: '',
       });
     } else {
       const j = await res.json().catch(() => ({}));
@@ -135,8 +138,7 @@ export default function AppointmentsPage() {
         >
           <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
           <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
-            Tell LifeMap what you need help with and when. The AI will pick the most suitable NDIS
-            provider for you based on your service category and location.
+            Tell LifeMap what you need help with and when. The AI will select the most suitable NDIS provider for you.
           </p>
 
           {/* Title */}
@@ -193,7 +195,7 @@ export default function AppointmentsPage() {
             </label>
           </div>
 
-          {/* Location / notes */}
+          {/* Location */}
           <label style={labelStyle}>
             Location (suburb or notes)
             <input
@@ -201,6 +203,19 @@ export default function AppointmentsPage() {
               placeholder="e.g. Melbourne, home visit, Telehealth"
               value={form.location}
               onChange={update('location')}
+              style={inputStyle}
+            />
+          </label>
+
+          {/* Email */}
+          <label style={labelStyle}>
+            Email address for confirmation
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={form.email}
+              onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              required
               style={inputStyle}
             />
           </label>
