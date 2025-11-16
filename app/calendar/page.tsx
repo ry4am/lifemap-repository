@@ -1,189 +1,281 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import NavBar from '@/components/NavBar';
 
-type Booking = { date: string; text: string; type: 'service-type' | 'urgent' | 'location' | 'standard' };
-
-const monthNames = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December"
-];
-const daysOfWeek = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+type Appointment = {
+  id: number;
+  service: string;
+  suburb: string;      // we’re using this as “location”
+  day: string;         // "YYYY-MM-DD"
+  time: string;        // "HH:MM"
+  provider_name: string;
+  state: string;
+};
 
 export default function CalendarPage() {
-  const now = useMemo(() => new Date(), []);
-  const [month, setMonth] = useState<number>(now.getMonth());
-  const [year, setYear] = useState<number>(now.getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    // Start at “today’s” month
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
 
-  // Seed demo bookings from localStorage (same as your HTML page)
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch appointments once on mount
   useEffect(() => {
-    const seeded =
-      (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('appointments') || 'null')) ||
-      [
-        { date: '2025-10-05', text: 'Cleaning Service',        type: 'service-type' },
-        { date: '2025-10-07', text: 'Medical Appointment',     type: 'urgent' },
-        { date: '2025-10-07', text: 'Clinic - Sydney',         type: 'location' },
-        { date: '2025-10-12', text: 'Standard Check-in',       type: 'standard' },
-        { date: '2025-10-18', text: 'Support Worker Visit',    type: 'service-type' },
-        { date: '2025-10-18', text: 'Urgent Medication Refill',type: 'urgent' },
-        { date: '2025-10-18', text: 'Pharmacy - Melbourne',    type: 'location' },
-      ];
-    setBookings(seeded);
+    const fetchAppointments = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch('/api/appointments');
+        if (!res.ok) {
+          throw new Error('Failed to fetch appointments');
+        }
+        const data = await res.json();
+        setAppointments(data);
+      } catch (e: any) {
+        console.error(e);
+        setError(e?.message ?? 'Error loading appointments');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAppointments();
   }, []);
 
-  const firstDay = useMemo(() => new Date(year, month, 1).getDay(), [year, month]);
-  const daysInMonth = useMemo(() => new Date(year, month + 1, 0).getDate(), [year, month]);
+  // Map of date -> appointments[] for quick lookup
+  const appointmentsByDate = useMemo(() => {
+    const map: Record<string, Appointment[]> = {};
 
-  const goPrev = () => {
-    setMonth(m => {
-      if (m === 0) { setYear(y => y - 1); return 11; }
-      return m - 1;
-    });
-  };
-  const goNext = () => {
-    setMonth(m => {
-      if (m === 11) { setYear(y => y + 1); return 0; }
-      return m + 1;
-    });
+    for (const appt of appointments) {
+      // appt.day is "YYYY-MM-DD"
+      const key = appt.day;
+      if (!map[key]) map[key] = [];
+      map[key].push(appt);
+    }
+
+    return map;
+  }, [appointments]);
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth(); // 0-11
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+  const daysInMonth = lastDayOfMonth.getDate();
+
+  // Day of week for the 1st (0=Sun,...6=Sat)
+  const startWeekDay = firstDayOfMonth.getDay();
+
+  // Build an array of weeks, each week = array of 7 “cells”
+  const weeks: { date: Date | null }[][] = [];
+  let currentDay = 1 - startWeekDay; // may start negative: empty cells
+
+  while (currentDay <= daysInMonth) {
+    const week: { date: Date | null }[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      if (currentDay < 1 || currentDay > daysInMonth) {
+        week.push({ date: null }); // outside current month
+      } else {
+        week.push({ date: new Date(year, month, currentDay) });
+      }
+      currentDay++;
+    }
+
+    weeks.push(week);
+  }
+
+  const goPrevMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
 
-  // Build a 7x6 grid (headers + days + trailing blanks)
-  const dayCells = [];
-  // headers
-  for (const d of daysOfWeek) {
-    dayCells.push(
-      <div key={`h-${d}`} className="day-header">{d}</div>
-    );
-  }
-  // leading blanks
-  for (let i = 0; i < firstDay; i++) {
-    dayCells.push(<div key={`e-start-${i}`} className="day" />);
-  }
-  // days
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const dayBookings = bookings.filter(b => b.date === dateStr);
-    dayCells.push(
-      <div key={`d-${d}`} className="day">
-        <strong>{d}</strong>
-        {dayBookings.map((b, idx) => (
-          <p key={idx} className={b.type}>{b.text}</p>
-        ))}
-      </div>
-    );
-  }
-  // trailing blanks to fill 7x6 grid (42 cells excluding headers)
-  const totalCells = firstDay + daysInMonth;
-  const remaining = 42 - totalCells;
-  for (let i = 0; i < remaining; i++) {
-    dayCells.push(<div key={`e-end-${i}`} className="day" />);
-  }
+  const goNextMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const monthLabel = currentMonth.toLocaleString('default', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', width: '100%' }}>
+    <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
       <NavBar />
 
-      <section className="wrap">
-        <div className="calendar-container">
-          <div className="month-selector">
-            <button onClick={goPrev}>&lt; Prev</button>
-            <h2>{monthNames[month]} {year}</h2>
-            <button onClick={goNext}>Next &gt;</button>
+      <section
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '32px',
+          background: 'linear-gradient(135deg, #4f46e5, #9333ea)',
+        }}
+      >
+        <div
+          style={{
+            background: 'white',
+            borderRadius: 24,
+            padding: 24,
+            maxWidth: 800,
+            width: '100%',
+            boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
+          }}
+        >
+          {/* Header + controls */}
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 16,
+            }}
+          >
+            <button
+              onClick={goPrevMonth}
+              style={buttonStyle}
+              type="button"
+            >
+              &lt; Prev
+            </button>
+
+            <h2 style={{ margin: 0 }}>{monthLabel}</h2>
+
+            <button
+              onClick={goNextMonth}
+              style={buttonStyle}
+              type="button"
+            >
+              Next &gt;
+            </button>
           </div>
 
-          <div className="calendar">
-            {dayCells}
+          {/* Status line */}
+          {loading && (
+            <p style={{ marginTop: 0, marginBottom: 8, fontSize: 12, opacity: 0.7 }}>
+              Loading appointments…
+            </p>
+          )}
+          {error && (
+            <p style={{ marginTop: 0, marginBottom: 8, fontSize: 12, color: 'red' }}>
+              {error}
+            </p>
+          )}
+
+          {/* Calendar grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(7, 1fr)',
+              gap: 8,
+            }}
+          >
+            {/* Weekday headings */}
+            {weekDays.map(d => (
+              <div
+                key={d}
+                style={{
+                  textAlign: 'center',
+                  fontWeight: 600,
+                  paddingBottom: 4,
+                  borderBottom: '1px solid #ddd',
+                }}
+              >
+                {d}
+              </div>
+            ))}
+
+            {/* Month days */}
+            {weeks.map((week, wi) =>
+              week.map((cell, di) => {
+                if (!cell.date) {
+                  return <div key={`${wi}-${di}`} />; // empty
+                }
+
+                const d = cell.date;
+                const dayNum = d.getDate();
+                const dateKey = d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+                const dayAppointments = appointmentsByDate[dateKey] || [];
+
+                return (
+                  <div
+                    key={`${wi}-${di}`}
+                    style={{
+                      minHeight: 64,
+                      borderRadius: 12,
+                      padding: 6,
+                      border: '1px solid #eee',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      fontSize: 12,
+                    }}
+                  >
+                    <div style={{ fontWeight: 600, marginBottom: 4 }}>{dayNum}</div>
+
+                    {/* Appointments for this day */}
+                    {dayAppointments.slice(0, 3).map(appt => (
+                      <div key={appt.id} style={{ marginBottom: 2, lineHeight: 1.2 }}>
+                        {/* Blue = Service Type */}
+                        <span style={{ color: '#2563eb', fontWeight: 600 }}>
+                          {appt.service}
+                        </span>
+
+                        {/* Green = Location (suburb) */}
+                        {appt.suburb && (
+                          <span style={{ color: '#16a34a' }}>
+                            {' · '}
+                            {appt.suburb}
+                          </span>
+                        )}
+
+                        {/* Time in black */}
+                        {appt.time && (
+                          <span style={{ color: '#000' }}>
+                            {' · '}
+                            {appt.time}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* If more than 3 appts, show "+n more" */}
+                    {dayAppointments.length > 3 && (
+                      <span style={{ fontSize: 10, opacity: 0.7 }}>
+                        +{dayAppointments.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                );
+              }),
+            )}
           </div>
 
-          <div className="legend">
-            <strong>Legend:</strong><br />
-            <span className="service-type">Blue = Service Type</span>
-            <span className="urgent">Red = Urgent</span>
-            <span className="location">Green = Location</span>
-            <span className="standard">Black = Standard Task</span>
+          {/* Legend */}
+          <div style={{ marginTop: 12, fontSize: 12 }}>
+            <strong>Legend:</strong>{' '}
+            <span style={{ color: '#2563eb' }}>Blue = Service Type</span>{' '}
+            <span style={{ color: 'red', marginLeft: 8 }}>Red = Urgent (future)</span>{' '}
+            <span style={{ color: '#16a34a', marginLeft: 8 }}>Green = Location</span>{' '}
+            <span style={{ marginLeft: 8 }}>Black = Time / Standard Task</span>
           </div>
         </div>
       </section>
-
-      <style jsx>{`
-        .wrap{
-          flex:1;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          padding:24px;
-          background: linear-gradient(135deg, #6a11cb, #2575fc);
-        }
-        .calendar-container {
-          background-color: #fff;
-          border-radius: 15px;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-          padding: 20px;
-          width: 95%;
-          max-width: 900px;
-        }
-        .month-selector {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 15px;
-        }
-        .month-selector button {
-          background-color: #2575fc;
-          color: white;
-          border: none;
-          padding: 10px 15px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 16px;
-          transition: background .3s;
-        }
-        .month-selector button:hover { background-color: #1e63d1; }
-        .month-selector h2 { margin: 0; color: #333; }
-
-        .calendar {
-          display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          gap: 10px;
-          text-align: left;
-        }
-        .day-header {
-          font-weight: bold;
-          background-color: #2575fc;
-          color: white;
-          padding: 8px;
-          border-radius: 8px;
-          text-align: center;
-        }
-        .day {
-          background-color: #f8f8f8;
-          border-radius: 8px;
-          padding: 10px;
-          min-height: 100px;
-          box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-          overflow: hidden;
-        }
-        .day strong { display:block; margin-bottom:5px; color:#333; }
-
-        /* Colour coding */
-        .service-type { color: blue; font-weight: bold; }
-        .urgent { color: red; font-weight: bold; }
-        .location { color: green; }
-        .standard { color: black; }
-
-        .legend {
-          margin-top: 20px;
-          text-align: left;
-          font-size: 14px;
-        }
-        .legend span { margin-right: 20px; }
-
-        @media (max-width: 700px) {
-          .calendar { grid-template-columns: repeat(2, 1fr); }
-        }
-      `}</style>
     </main>
   );
 }
+
+const buttonStyle: React.CSSProperties = {
+  padding: '6px 12px',
+  borderRadius: 8,
+  border: '2px solid black',
+  background: '#59C3FF',
+  fontWeight: 600,
+  cursor: 'pointer',
+};
