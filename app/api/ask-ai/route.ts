@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { OpenAI } from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,  
+});
+
+
 const SYSTEM_PROMPT = `
 You are LifeMap's AI assistant.
 You help NDIS participants and support workers understand schedules, appointments,
