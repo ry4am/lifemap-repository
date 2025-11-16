@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     // 3. Send confirmation email using Resend
     if (email) {
       await resend.emails.send({
-        from: process.env.FROM_EMAIL!,
+        from: 'onboarding@resend.dev',
         to: email,
         subject: `Your appointment has been booked`,
         html: `
