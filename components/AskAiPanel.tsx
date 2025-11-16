@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState, FormEvent } from "react";
+import React, { useState, FormEvent, useEffect, useRef } from "react";
 
 type Message = {
   role: "user" | "assistant";
@@ -16,6 +16,73 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ---- NEW: speech-to-text state ----
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  // Set up Web Speech API once on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      console.warn("Speech recognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-AU"; // tweak if you like
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript + " ";
+      }
+
+      // Append transcript to existing input
+      const cleaned = transcript.trim();
+      if (!cleaned) return;
+
+      setInput((prev) => (prev ? `${prev} ${cleaned}` : cleaned));
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+  }, []);
+
+  const handleMicClick = () => {
+    const recognition = recognitionRef.current;
+    if (!recognition) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    if (!isListening) {
+      try {
+        recognition.start();
+        setIsListening(true);
+      } catch (err) {
+        console.error("Failed to start recognition:", err);
+      }
+    } else {
+      recognition.stop();
+      setIsListening(false);
+    }
+  };
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,10 +112,6 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
       }
 
       const data = await res.json();
-      const reply: Message = {
-        role: "assistant",
-        content: data.reply || "I’m not sure how to respond to that.",
-      };
 
       setMessages((prev) => [
         ...prev,
@@ -94,9 +157,7 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
           {messages.map((m, i) => (
             <div
               key={i}
-              className={
-                m.role === "user" ? "msg msg-user" : "msg msg-assistant"
-              }
+              className={m.role === "user" ? "msg msg-user" : "msg msg-assistant"}
             >
               <div className="msg-label">
                 {m.role === "user" ? "You" : "LifeMap AI"}
@@ -107,24 +168,40 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
 
           {error && <div className="askai-error">{error}</div>}
 
-          {loading && (
-            <div className="askai-loading">
-              Thinking…
-            </div>
-          )}
+          {loading && <div className="askai-loading">Thinking…</div>}
         </div>
 
         <form onSubmit={handleSubmit} className="askai-form">
-          <textarea
-            rows={3}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your question here…"
-            className="askai-input"
-          />
-          <button type="submit" disabled={loading || !input.trim()} className="askai-button">
-            {loading ? "Sending…" : "Send"}
-          </button>
+          <div className="askai-form-row">
+            <textarea
+              rows={3}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your question here… or use the mic."
+              className="askai-input"
+            />
+
+            {/* NEW: mic button */}
+            <button
+              type="button"
+              onClick={handleMicClick}
+              className={
+                "askai-mic-button" + (isListening ? " askai-mic-button-active" : "")
+              }
+              aria-pressed={isListening}
+              aria-label={isListening ? "Stop voice input" : "Start voice input"}
+            >
+              🎙️
+            </button>
+
+            <button
+              type="submit"
+              disabled={loading || !input.trim()}
+              className="askai-button"
+            >
+              {loading ? "Sending…" : "Send"}
+            </button>
+          </div>
         </form>
       </div>
 
@@ -273,13 +350,16 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
 
         .askai-form {
           margin-top: 6px;
+        }
+
+        .askai-form-row {
           display: flex;
-          flex-direction: column;
           gap: 6px;
+          align-items: flex-end;
         }
 
         .askai-input {
-          width: 100%;
+          flex: 1;
           resize: none;
           border-radius: 10px;
           border: 1px solid #374151;
@@ -297,8 +377,31 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
           box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
         }
 
+        .askai-mic-button {
+          height: 38px;
+          width: 38px;
+          border-radius: 999px;
+          border: 1px solid #374151;
+          background: #020617;
+          color: #e5e7eb;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.1rem;
+          cursor: pointer;
+          transition: background 0.15s, border 0.15s, transform 0.05s;
+        }
+
+        .askai-mic-button:hover {
+          background: #111827;
+        }
+
+        .askai-mic-button-active {
+          background: #dc2626;
+          border-color: #f87171;
+        }
+
         .askai-button {
-          align-self: flex-end;
           padding: 8px 16px;
           border-radius: 999px;
           border: none;
