@@ -17,7 +17,7 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ---- NEW: speech-to-text state ----
+  // Speech-to-text state
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
 
@@ -39,13 +39,13 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
     recognition.interimResults = true;
     recognition.continuous = false;
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    // NOTE: event typed as `any` so TS doesn't complain in Next build
+    recognition.onresult = (event: any) => {
       let transcript = "";
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript + " ";
       }
 
-      // Append transcript to existing input
       const cleaned = transcript.trim();
       if (!cleaned) return;
 
@@ -102,7 +102,7 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: newMessage.content,
-          history: nextMessages, // send short history so replies feel contextual
+          history: nextMessages,
         }),
       });
 
@@ -181,7 +181,7 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
               className="askai-input"
             />
 
-            {/* NEW: mic button */}
+            {/* Mic button */}
             <button
               type="button"
               onClick={handleMicClick}
