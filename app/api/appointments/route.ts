@@ -9,35 +9,21 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // 👇 match what page.tsx sends
-    const { title, serviceType, dateTime, location } = body;
+    const { title, serviceType, date, time, location } = body;
 
-    // Basic validation
-    if (!serviceType || !dateTime || !location) {
+    if (!serviceType || !date || !time || !location) {
       return NextResponse.json(
         { ok: false, error: 'Missing required appointment fields' },
         { status: 400 }
       );
     }
 
-    // Parse ISO date-time string
-    const dt = new Date(dateTime);
-    if (Number.isNaN(dt.getTime())) {
-      return NextResponse.json(
-        { ok: false, error: 'Invalid date/time value' },
-        { status: 400 }
-      );
-    }
-
-    // Map into your Appointment columns
     const service = serviceType;
-    const day = dt.toISOString().slice(0, 10);    // "YYYY-MM-DD"
-    const time = dt.toISOString().slice(11, 16);  // "HH:MM"
+    const day = date;           // "YYYY-MM-DD" from <input type="date">
     const suburb = location;
     const state = 'VIC';
 
-    // Prisma expects strings, so use empty strings instead of nulls
-    const provider_id = ''; // or some default ID logic if you add providers later
+    const provider_id = '';
     const provider_name = title || serviceType || 'Appointment';
 
     const appointment = await prismaAppointments.appointment.create({
@@ -45,7 +31,7 @@ export async function POST(req: NextRequest) {
         service,
         suburb,
         day,
-        time,
+        time,          // "HH:MM" 24h from <input type="time">
         provider_id,
         provider_name,
         state,

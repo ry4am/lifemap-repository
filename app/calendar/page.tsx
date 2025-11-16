@@ -6,7 +6,7 @@ import NavBar from '@/components/NavBar';
 type Appointment = {
   id: number;
   service: string;
-  suburb: string;      // we’re using this as “location”
+  suburb: string;      // using as location
   day: string;         // "YYYY-MM-DD"
   time: string;        // "HH:MM"
   provider_name: string;
@@ -15,7 +15,6 @@ type Appointment = {
 
 export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(() => {
-    // Start at “today’s” month
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
@@ -24,7 +23,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch appointments once on mount
+  // Fetch appointments once
   useEffect(() => {
     const fetchAppointments = async () => {
       setLoading(true);
@@ -47,46 +46,39 @@ export default function CalendarPage() {
     fetchAppointments();
   }, []);
 
-  // Map of date -> appointments[] for quick lookup
+  // Group them by day
   const appointmentsByDate = useMemo(() => {
     const map: Record<string, Appointment[]> = {};
-
     for (const appt of appointments) {
-      // appt.day is "YYYY-MM-DD"
-      const key = appt.day;
+      const key = appt.day; // already "YYYY-MM-DD"
       if (!map[key]) map[key] = [];
       map[key].push(appt);
     }
-
     return map;
   }, [appointments]);
 
   const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth(); // 0-11
+  const month = currentMonth.getMonth();
 
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
   const daysInMonth = lastDayOfMonth.getDate();
 
-  // Day of week for the 1st (0=Sun,...6=Sat)
-  const startWeekDay = firstDayOfMonth.getDay();
+  const startWeekDay = firstDayOfMonth.getDay(); // 0-6
 
-  // Build an array of weeks, each week = array of 7 “cells”
   const weeks: { date: Date | null }[][] = [];
-  let currentDay = 1 - startWeekDay; // may start negative: empty cells
+  let currentDay = 1 - startWeekDay;
 
   while (currentDay <= daysInMonth) {
     const week: { date: Date | null }[] = [];
-
     for (let i = 0; i < 7; i++) {
       if (currentDay < 1 || currentDay > daysInMonth) {
-        week.push({ date: null }); // outside current month
+        week.push({ date: null });
       } else {
         week.push({ date: new Date(year, month, currentDay) });
       }
       currentDay++;
     }
-
     weeks.push(week);
   }
 
@@ -129,7 +121,7 @@ export default function CalendarPage() {
             boxShadow: '0 12px 24px rgba(0,0,0,0.2)',
           }}
         >
-          {/* Header + controls */}
+          {/* Header */}
           <div
             style={{
               display: 'flex',
@@ -138,26 +130,17 @@ export default function CalendarPage() {
               marginBottom: 16,
             }}
           >
-            <button
-              onClick={goPrevMonth}
-              style={buttonStyle}
-              type="button"
-            >
+            <button onClick={goPrevMonth} style={buttonStyle} type="button">
               &lt; Prev
             </button>
 
             <h2 style={{ margin: 0 }}>{monthLabel}</h2>
 
-            <button
-              onClick={goNextMonth}
-              style={buttonStyle}
-              type="button"
-            >
+            <button onClick={goNextMonth} style={buttonStyle} type="button">
               Next &gt;
             </button>
           </div>
 
-          {/* Status line */}
           {loading && (
             <p style={{ marginTop: 0, marginBottom: 8, fontSize: 12, opacity: 0.7 }}>
               Loading appointments…
@@ -169,7 +152,7 @@ export default function CalendarPage() {
             </p>
           )}
 
-          {/* Calendar grid */}
+          {/* Grid */}
           <div
             style={{
               display: 'grid',
@@ -177,7 +160,6 @@ export default function CalendarPage() {
               gap: 8,
             }}
           >
-            {/* Weekday headings */}
             {weekDays.map(d => (
               <div
                 key={d}
@@ -192,11 +174,10 @@ export default function CalendarPage() {
               </div>
             ))}
 
-            {/* Month days */}
             {weeks.map((week, wi) =>
               week.map((cell, di) => {
                 if (!cell.date) {
-                  return <div key={`${wi}-${di}`} />; // empty
+                  return <div key={`${wi}-${di}`} />;
                 }
 
                 const d = cell.date;
@@ -219,33 +200,20 @@ export default function CalendarPage() {
                   >
                     <div style={{ fontWeight: 600, marginBottom: 4 }}>{dayNum}</div>
 
-                    {/* Appointments for this day */}
                     {dayAppointments.slice(0, 3).map(appt => (
                       <div key={appt.id} style={{ marginBottom: 2, lineHeight: 1.2 }}>
-                        {/* Blue = Service Type */}
                         <span style={{ color: '#2563eb', fontWeight: 600 }}>
                           {appt.service}
                         </span>
-
-                        {/* Green = Location (suburb) */}
                         {appt.suburb && (
-                          <span style={{ color: '#16a34a' }}>
-                            {' · '}
-                            {appt.suburb}
-                          </span>
+                          <span style={{ color: '#16a34a' }}>{' · '}{appt.suburb}</span>
                         )}
-
-                        {/* Time in black */}
                         {appt.time && (
-                          <span style={{ color: '#000' }}>
-                            {' · '}
-                            {appt.time}
-                          </span>
+                          <span style={{ color: '#000' }}>{' · '}{appt.time}</span>
                         )}
                       </div>
                     ))}
 
-                    {/* If more than 3 appts, show "+n more" */}
                     {dayAppointments.length > 3 && (
                       <span style={{ fontSize: 10, opacity: 0.7 }}>
                         +{dayAppointments.length - 3} more
@@ -253,7 +221,7 @@ export default function CalendarPage() {
                     )}
                   </div>
                 );
-              }),
+              })
             )}
           </div>
 
@@ -261,7 +229,7 @@ export default function CalendarPage() {
           <div style={{ marginTop: 12, fontSize: 12 }}>
             <strong>Legend:</strong>{' '}
             <span style={{ color: '#2563eb' }}>Blue = Service Type</span>{' '}
-            <span style={{ color: 'red', marginLeft: 8 }}>Red = Urgent (future)</span>{' '}
+            <span style={{ color: 'red', marginLeft: 8 }}>Red = Urgent</span>{' '}
             <span style={{ color: '#16a34a', marginLeft: 8 }}>Green = Location</span>{' '}
             <span style={{ marginLeft: 8 }}>Black = Time / Standard Task</span>
           </div>

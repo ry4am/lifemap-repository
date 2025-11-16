@@ -21,14 +21,14 @@ export default function AppointmentsPage() {
   });
   const [loading, setLoading] = useState(false);
 
-  const update = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm(f => ({ ...f, [k]: e.target.value }));
+  const update =
+    (k: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm(f => ({ ...f, [k]: e.target.value }));
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    const dateTime = new Date(`${form.date}T${form.time}:00`);
 
     const res = await fetch('/api/appointments', {
       method: 'POST',
@@ -36,7 +36,8 @@ export default function AppointmentsPage() {
       body: JSON.stringify({
         title: form.title || form.serviceType || 'Appointment',
         serviceType: form.serviceType,
-        dateTime,
+        date: form.date,       // send raw date "YYYY-MM-DD"
+        time: form.time,       // send raw time "HH:MM" (24h)
         location: form.location,
       }),
     });
@@ -59,35 +60,37 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <main style={{ display: "flex", flexDirection: "column", minHeight: "100dvh", width: "100%" }}>
+    <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', width: '100%' }}>
       <NavBar />
 
-      <section style={{
-        flex: 1,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        padding: "32px",
-        background: "#f5f7fb"
-      }}>
+      <section
+        style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '32px',
+          background: '#f5f7fb',
+        }}
+      >
         <form
           onSubmit={onSubmit}
           style={{
-            width: "100%",
+            width: '100%',
             maxWidth: 600,
             borderRadius: 24,
-            border: "2px solid black",
-            background: "white",
+            border: '2px solid black',
+            background: 'white',
             padding: 24,
-            boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
-            display: "grid",
-            gap: 12
+            boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
+            display: 'grid',
+            gap: 12,
           }}
         >
-          <h1 style={{ margin: "0 0 8px" }}>Book an Appointment</h1>
-          <p style={{ margin: "0 0 16px", fontSize: 14, opacity: 0.8 }}>
-            Tell LifeMap what you need help with and when. This will create an appointment entry that
-            can later be surfaced in your calendar and reminder emails.
+          <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
+          <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
+            Tell LifeMap what you need help with and when. This will create an appointment entry
+            that can later be surfaced in your calendar and reminder emails.
           </p>
 
           <label style={labelStyle}>
@@ -118,7 +121,7 @@ export default function AppointmentsPage() {
             </select>
           </label>
 
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             <label style={{ ...labelStyle, flex: 1 }}>
               Date
               <input
@@ -157,15 +160,15 @@ export default function AppointmentsPage() {
             disabled={loading}
             style={{
               marginTop: 8,
-              padding: "10px 16px",
+              padding: '10px 16px',
               borderRadius: 16,
-              border: "2px solid black",
-              background: "#59C3FF",
+              border: '2px solid black',
+              background: '#59C3FF',
               fontWeight: 700,
-              cursor: "pointer"
+              cursor: 'pointer',
             }}
           >
-            {loading ? "Booking…" : "Book Appointment"}
+            {loading ? 'Booking…' : 'Book Appointment'}
           </button>
         </form>
       </section>
@@ -174,16 +177,16 @@ export default function AppointmentsPage() {
 }
 
 const labelStyle: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
+  display: 'flex',
+  flexDirection: 'column',
   fontSize: 14,
   gap: 4,
 };
 
 const inputStyle: React.CSSProperties = {
   borderRadius: 12,
-  border: "2px solid black",
-  padding: "8px 10px",
+  border: '2px solid black',
+  padding: '8px 10px',
   fontSize: 14,
-  outline: "none",
+  outline: 'none',
 };
