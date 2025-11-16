@@ -50,7 +50,13 @@ export default function AskAiPanel({ onClose }: AskAiPanelProps) {
         content: data.reply || "I’m not sure how to respond to that.",
       };
 
-      setMessages((prev) => [...prev, reply]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: data.reply || "I'm not sure how to respond to that.",
+        },
+      ]);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Something went wrong talking to the AI.");

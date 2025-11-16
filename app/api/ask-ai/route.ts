@@ -28,14 +28,14 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "OPENAI_API_KEY is not set on the server" },
-        { status: 500 }
-      );
-    }
-
     const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+
+    // If no API key is configured, fall back to a simple demo response
+    // so the chatbot still replies instead of failing.
+    if (!apiKey) {
+      console.warn("[ask-ai] OPENAI_API_KEY not set; returning demo reply.");
+      return NextResponse.json({ reply: buildFallbackReply(message) });
+    }
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -57,10 +57,7 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       console.error("OpenAI error:", response.status, text);
-      return NextResponse.json(
-        { error: "Failed to get a response from the AI service." },
-        { status: 500 }
-      );
+      return NextResponse.json({ reply: buildFallbackReply(message) });
     }
 
     const data = await response.json();
@@ -68,12 +65,36 @@ export async function POST(req: NextRequest) {
       data?.choices?.[0]?.message?.content?.trim() ||
       "Sorry, I couldn’t generate a response just now.";
 
-    return NextResponse.json({ reply });
+    return NextResponse.json({
+      reply:
+        reply || "Sorry, I couldn't generate a response just now.",
+    });
   } catch (err) {
     console.error("ask-ai route error:", err);
-    return NextResponse.json(
-      { error: "Unexpected server error in ask-ai route." },
-      { status: 500 }
-    );
+    // On unexpected errors, still return a graceful fallback reply
+    // so the UI always shows some assistant response.
+    return NextResponse.json({
+      reply: buildFallbackReply(""),
+    });
   }
+}
+
+function buildFallbackReply(message: string): string {
+  const trimmed = (message || "").trim();
+  const short =
+    trimmed.length > 220 ? `${trimmed.slice(0, 220).trimEnd()}…` : trimmed;
+
+  return [
+    "I'm running in demo mode right now, without a live AI connection.",
+    trimmed ? "" : undefined,
+    trimmed ? "Based on what you asked:" : undefined,
+    trimmed ? `"${short}"` : undefined,
+    "",
+    "Here are some next steps you could consider:",
+    "- Clarify what support or outcome you want.",
+    "- Check your upcoming appointments in the Calendar.",
+    "- If this is urgent or medical, contact a qualified professional.",
+  ]
+    .filter((line) => line !== undefined)
+    .join("\n");
 }
