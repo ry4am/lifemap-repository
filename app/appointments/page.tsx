@@ -34,7 +34,6 @@ export default function AppointmentsPage() {
     location: '',
   });
 
-  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   const update =
@@ -42,7 +41,7 @@ export default function AppointmentsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
 
-  // All unique service categories from JSON
+  // Build a unique sorted list of all service categories from JSON
   const allServiceCategories = useMemo(() => {
     const set = new Set<string>();
     for (const p of providers) {
@@ -54,21 +53,9 @@ export default function AppointmentsPage() {
     return Array.from(set).sort();
   }, []);
 
-  // Providers filtered by selected category
-  const filteredProviders = useMemo(() => {
-    if (!form.serviceType) return providers;
-    return providers.filter(p =>
-      p.service_categories.includes(form.serviceType)
-    );
-  }, [form.serviceType]);
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    const provider = providers.find(
-      p => p.provider_id === Number(selectedProviderId)
-    );
 
     const res = await fetch('/api/appointments', {
       method: 'POST',
@@ -76,11 +63,9 @@ export default function AppointmentsPage() {
       body: JSON.stringify({
         title: form.title || form.serviceType || 'Appointment',
         serviceType: form.serviceType,
-        date: form.date,
-        time: form.time,
+        date: form.date,      // "YYYY-MM-DD"
+        time: form.time,      // "HH:MM" 24h
         location: form.location,
-        providerId: provider ? provider.provider_id : '',
-        providerName: provider ? provider.provider_name : '',
       }),
     });
 
@@ -95,7 +80,6 @@ export default function AppointmentsPage() {
         time: '',
         location: '',
       });
-      setSelectedProviderId('');
     } else {
       const j = await res.json().catch(() => ({}));
       alert(j.error || 'Failed to create appointment');
@@ -140,7 +124,8 @@ export default function AppointmentsPage() {
         >
           <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
           <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
-            Choose a service category, pick a provider from the NDIS list, and set the date and time.
+            Tell LifeMap what you need help with and when. The AI will pick the most suitable NDIS
+            provider for you based on your service category and location.
           </p>
 
           {/* Title */}
@@ -199,32 +184,14 @@ export default function AppointmentsPage() {
 
           {/* Notes / location */}
           <label style={labelStyle}>
-            Location (optional notes)
+            Location (suburb or notes)
             <input
               type="text"
-              placeholder="e.g. Telehealth, home visit"
+              placeholder="e.g. Melbourne, home visit, Telehealth"
               value={form.location}
               onChange={update('location')}
               style={inputStyle}
             />
-          </label>
-
-          {/* Provider list */}
-          <label style={labelStyle}>
-            NDIS Provider
-            <select
-              value={selectedProviderId}
-              onChange={e => setSelectedProviderId(e.target.value)}
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              required
-            >
-              <option value="">Select a provider…</option>
-              {filteredProviders.map(p => (
-                <option key={p.provider_id} value={String(p.provider_id)}>
-                  {p.provider_name} – {p.suburb} ({p.service_categories.join(', ')})
-                </option>
-              ))}
-            </select>
           </label>
 
           {/* Submit */}
@@ -243,7 +210,7 @@ export default function AppointmentsPage() {
               boxSizing: 'border-box',
             }}
           >
-            {loading ? 'Booking…' : 'Book Appointment'}
+            {loading ? 'Finding provider…' : 'Book Appointment'}
           </button>
         </form>
       </section>
