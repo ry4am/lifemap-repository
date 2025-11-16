@@ -9,24 +9,35 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const {
-      service,
-      suburb,
-      day,
-      time,
-      provider_id,
-      provider_name,
-      // if your model has these fields, otherwise remove/adjust
-      state = 'confirmed',
-    } = body || {};
+  
+    const { title, serviceType, dateTime, location } = body;
 
-    // Basic validation
-    if (!service || !suburb || !day || !time) {
+
+    if (!serviceType || !dateTime || !location) {
       return NextResponse.json(
         { ok: false, error: 'Missing required appointment fields' },
         { status: 400 }
       );
     }
+
+
+    const dt = new Date(dateTime);
+    if (Number.isNaN(dt.getTime())) {
+      return NextResponse.json(
+        { ok: false, error: 'Invalid date/time value' },
+        { status: 400 }
+      );
+    }
+
+
+    const service = serviceType;                 // e.g. "Daily Tasks"
+    const day = dt.toISOString().slice(0, 10);   // "YYYY-MM-DD"
+    const time = dt.toISOString().slice(11, 16); // "HH:MM"
+    const suburb = location;                     // you can refine later
+    const state = 'VIC';                         // placeholder for now
+
+    const provider_id = null;                    // optional
+    const provider_name = title || serviceType || 'Appointment';
 
     const appointment = await prismaAppointments.appointment.create({
       data: {
@@ -54,13 +65,13 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   try {
     const appointments = await prismaAppointments.appointment.findMany({
-      orderBy: { created_at: 'desc' }, // ✅ matches Prisma field
+      orderBy: { created_at: 'desc' },
       take: 100,
     });
 
     return NextResponse.json(appointments);
   } catch (e: any) {
-    console.error("appointments GET error:", e);
+    console.error('appointments GET error:', e);
     return NextResponse.json({ ok: false, error: e.message }, { status: 500 });
   }
 }
