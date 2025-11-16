@@ -1,7 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import NavBar from '@/components/NavBar';
+import providersData from '@/data/providers.json';
+
+type Provider = {
+  id: string;
+  provider_name: string;
+  service_categories: string[];   // 👈 UPDATED
+  suburb: string;
+  state: string;
+};
+
+const providers = providersData as Provider[];
 
 type FormState = {
   title: string;
@@ -19,6 +30,8 @@ export default function AppointmentsPage() {
     time: '',
     location: '',
   });
+
+  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   const update =
@@ -26,9 +39,21 @@ export default function AppointmentsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
 
+  // Filter providers by service type using service_categories[]
+  const filteredProviders = useMemo(() => {
+    if (!form.serviceType) return providers;
+    return providers.filter(p =>
+      p.service_categories.some(cat =>
+        cat.toLowerCase() === form.serviceType.toLowerCase()
+      )
+    );
+  }, [form.serviceType]);
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    const provider = providers.find(p => p.id === selectedProviderId);
 
     const res = await fetch('/api/appointments', {
       method: 'POST',
@@ -36,9 +61,11 @@ export default function AppointmentsPage() {
       body: JSON.stringify({
         title: form.title || form.serviceType || 'Appointment',
         serviceType: form.serviceType,
-        date: form.date,       // send raw date "YYYY-MM-DD"
-        time: form.time,       // send raw time "HH:MM" (24h)
+        date: form.date,
+        time: form.time,
         location: form.location,
+        providerId: provider?.id ?? '',
+        providerName: provider?.provider_name ?? '',
       }),
     });
 
@@ -53,6 +80,7 @@ export default function AppointmentsPage() {
         time: '',
         location: '',
       });
+      setSelectedProviderId('');
     } else {
       const j = await res.json().catch(() => ({}));
       alert(j.error || 'Failed to create appointment');
@@ -88,11 +116,8 @@ export default function AppointmentsPage() {
           }}
         >
           <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
-          <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
-            Tell LifeMap what you need help with and when. This will create an appointment entry
-            that can later be surfaced in your calendar and reminder emails.
-          </p>
 
+          {/* Title */}
           <label style={labelStyle}>
             Appointment title
             <input
@@ -104,6 +129,7 @@ export default function AppointmentsPage() {
             />
           </label>
 
+          {/* Service type */}
           <label style={labelStyle}>
             Service type
             <select
@@ -121,6 +147,7 @@ export default function AppointmentsPage() {
             </select>
           </label>
 
+          {/* Date & time */}
           <div style={{ display: 'flex', gap: 12 }}>
             <label style={{ ...labelStyle, flex: 1 }}>
               Date
@@ -144,17 +171,37 @@ export default function AppointmentsPage() {
             </label>
           </div>
 
+          {/* Notes / location */}
           <label style={labelStyle}>
-            Location
+            Location (optional notes)
             <input
               type="text"
-              placeholder="e.g. Melbourne NDIS Centre"
+              placeholder="e.g. Home visit, Telehealth"
               value={form.location}
               onChange={update('location')}
               style={inputStyle}
             />
           </label>
 
+          {/* Provider list */}
+          <label style={labelStyle}>
+            NDIS Provider
+            <select
+              value={selectedProviderId}
+              onChange={e => setSelectedProviderId(e.target.value)}
+              style={{ ...inputStyle, cursor: 'pointer' }}
+              required
+            >
+              <option value="">Select a provider…</option>
+              {filteredProviders.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.provider_name} – {p.suburb}, {p.state} ({p.service_categories.join(', ')})
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
