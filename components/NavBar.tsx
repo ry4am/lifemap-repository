@@ -13,13 +13,22 @@ export default function NavBar() {
     textDecoration: "none",
   };
 
-  const askAiButton: React.CSSProperties = {
-    padding: "6px 18px",
+  const chatBubbleButton: React.CSSProperties = {
+    position: "fixed",
+    right: "24px",
+    bottom: "24px",
+    width: "56px",
+    height: "56px",
     borderRadius: "999px",
     border: "2px solid black",
     background: "white",
     cursor: "pointer",
-    fontWeight: 600,
+    fontWeight: 700,
+    boxShadow: "0 8px 16px rgba(0, 0, 0, 0.25)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 40,
   };
 
   return (
@@ -57,13 +66,6 @@ export default function NavBar() {
         </div>
 
         <nav style={{ display: "flex", alignItems: "center", gap: "24px", paddingRight: "20px" }}>
-          <button
-            type="button"
-            style={askAiButton}
-            onClick={() => setShowAskAi(true)}
-          >
-            Ask AI
-          </button>
           <a href="/" style={navButton}>
             Home
           </a>
@@ -78,6 +80,15 @@ export default function NavBar() {
           </a>
         </nav>
       </header>
+
+      <button
+        type="button"
+        style={chatBubbleButton}
+        onClick={() => setShowAskAi(true)}
+        aria-label="Open Ask AI"
+      >
+        AI
+      </button>
 
       {showAskAi && <AskAiPanel onClose={() => setShowAskAi(false)} />}
     </>
