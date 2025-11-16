@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import NavBar from '@/components/NavBar';
 import providersData from '@/data/providers.json';
 
-// Match the JSON shape
+// Match providers.json shape
 type Provider = {
   provider_id: number;
   provider_name: string;
@@ -42,20 +42,19 @@ export default function AppointmentsPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm(f => ({ ...f, [k]: e.target.value }));
 
-  // Build a unique list of all service categories from the JSON
+  // All unique service categories from JSON
   const allServiceCategories = useMemo(() => {
     const set = new Set<string>();
     for (const p of providers) {
       for (const cat of p.service_categories) {
-        if (cat && cat.trim()) {
-          set.add(cat.trim());
-        }
+        const clean = cat?.trim();
+        if (clean) set.add(clean);
       }
     }
     return Array.from(set).sort();
   }, []);
 
-  // Filter providers by selected service type (exact category match)
+  // Providers filtered by selected category
   const filteredProviders = useMemo(() => {
     if (!form.serviceType) return providers;
     return providers.filter(p =>
@@ -104,7 +103,14 @@ export default function AppointmentsPage() {
   };
 
   return (
-    <main style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', width: '100%' }}>
+    <main
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100dvh',
+        width: '100%',
+      }}
+    >
       <NavBar />
 
       <section
@@ -129,6 +135,7 @@ export default function AppointmentsPage() {
             boxShadow: '0 8px 20px rgba(0,0,0,0.15)',
             display: 'grid',
             gap: 12,
+            boxSizing: 'border-box',
           }}
         >
           <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
@@ -148,7 +155,7 @@ export default function AppointmentsPage() {
             />
           </label>
 
-          {/* Service type from JSON categories */}
+          {/* Service category */}
           <label style={labelStyle}>
             Service category
             <select
@@ -232,6 +239,8 @@ export default function AppointmentsPage() {
               background: '#59C3FF',
               fontWeight: 700,
               cursor: 'pointer',
+              width: '100%',
+              boxSizing: 'border-box',
             }}
           >
             {loading ? 'Booking…' : 'Book Appointment'}
@@ -255,4 +264,6 @@ const inputStyle: React.CSSProperties = {
   padding: '8px 10px',
   fontSize: 14,
   outline: 'none',
+  width: '100%',
+  boxSizing: 'border-box',
 };
