@@ -98,7 +98,7 @@ const linkStyle: React.CSSProperties = {
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
-    fullName: '',
+    name: '',
     ndisId: '',
     email: '',
     confirmEmail: '',
