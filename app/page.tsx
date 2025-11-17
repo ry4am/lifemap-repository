@@ -5,12 +5,13 @@ import NavBar from "@/components/NavBar";
 import Image from "next/image";
 import React from "react";
 
-// Full Home Page Component
 export default function HomePage() {
   const { data: session, status } = useSession();
 
-  // Only use the full name stored in Neon user table
-  const displayName = session?.user?.name || "Participant";
+  const displayName =
+    status === "authenticated" && session?.user?.name
+      ? session.user.name
+      : "Participant";
 
   return (
     <main
@@ -19,46 +20,62 @@ export default function HomePage() {
         flexDirection: "column",
         minHeight: "100dvh",
         width: "100%",
-        background: "#f0f4ff"
+        background: "#f0f4ff",
       }}
     >
-      {/* Top Navbar */}
       <NavBar />
 
-      {/* Page Container */}
+      {/* Login status helper */}
+      <div
+        style={{
+          marginTop: "8px",
+          marginLeft: "20px",
+          fontSize: "12px",
+          opacity: 0.7,
+        }}
+      >
+        {status === "authenticated" && (
+          <span>
+            Signed in as <strong>{session?.user?.name}</strong> (
+            {session?.user?.email})
+          </span>
+        )}
+      </div>
+
+      {/* PAGE LAYOUT */}
       <div
         style={{
           display: "flex",
           width: "100%",
-          marginTop: "20px",
+          marginTop: "12px",
           padding: "0 20px",
           gap: "24px",
         }}
       >
-        {/* Left Profile Sidebar */}
+        {/* LEFT SIDEBAR — NOW NARROWER */}
         <aside
           style={{
-            width: "260px",
+            width: "200px",              // ← was 260px
             background: "white",
             borderRadius: "16px",
-            padding: "24px",
+            padding: "20px",
             border: "2px solid black",
             minHeight: "350px",
           }}
         >
           <div style={{ textAlign: "center" }}>
-            {/* Avatar circle */}
+            {/* Avatar */}
             <div
               style={{
-                width: "100px",
-                height: "100px",
+                width: "80px",            // ← smaller
+                height: "80px",
                 borderRadius: "50%",
                 background: "#d3d3ff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                margin: "0 auto 12px",
-                fontSize: "42px",
+                margin: "0 auto 10px",
+                fontSize: "32px",        // ← smaller
                 color: "#4b4b8f",
                 fontWeight: 700,
               }}
@@ -66,13 +83,18 @@ export default function HomePage() {
               {displayName.charAt(0).toUpperCase()}
             </div>
 
-            {/* Dynamic User Name */}
-            <h2 style={{ margin: "4px 0 8px" }}>{displayName}</h2>
+            <h3 style={{ margin: "4px 0 4px" }}>{displayName}</h3>
 
-            <p style={{ opacity: 0.7 }}>Participant</p>
+            <p style={{ opacity: 0.7, fontSize: "13px" }}>Participant</p>
 
-            {/* Stats */}
-            <div style={{ marginTop: "20px", textAlign: "left", lineHeight: "1.9" }}>
+            <div
+              style={{
+                marginTop: "16px",
+                textAlign: "left",
+                lineHeight: "1.5",
+                fontSize: "13px",
+              }}
+            >
               <div>Profile Viewers <strong>8</strong></div>
               <div>Jobs Completed <strong>12</strong></div>
               <div>Connections <strong>6</strong></div>
@@ -81,7 +103,7 @@ export default function HomePage() {
           </div>
         </aside>
 
-        {/* Main Feed Area */}
+        {/* MAIN FEED */}
         <div
           style={{
             flex: 1,
@@ -112,7 +134,7 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Example Feed Post #1 */}
+          {/* FEED POST #1 — Cleaning */}
           <div
             style={{
               background: "white",
@@ -121,11 +143,12 @@ export default function HomePage() {
               border: "2px solid black",
             }}
           >
+            {/* Header */}
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <div
                 style={{
-                  width: "48px",
-                  height: "48px",
+                  width: "40px",
+                  height: "40px",
                   borderRadius: "50%",
                   background: "#e5e7eb",
                 }}
@@ -143,29 +166,30 @@ export default function HomePage() {
             </h3>
 
             <p style={{ opacity: 0.8, marginBottom: "12px" }}>
-              Today I helped a participant re-allocate some core funding to include regular cleaning and
-              laundry support…
+              Today I helped a participant re-allocate some core funding…
             </p>
 
+            {/* SMALLER IMAGE */}
             <div
               style={{
                 width: "100%",
+                maxWidth: "600px",        // ← shrink max width
+                margin: "0 auto",
                 borderRadius: "12px",
                 overflow: "hidden",
-                marginTop: "8px",
               }}
             >
               <Image
-                src="https://images.unsplash.com/photo-1585417238790-f6d290d6490c?q=80&w=2137&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                alt="cleaning"
-                width={800}
-                height={400}
-                style={{ width: "100%", height: "auto" }}
+                src="https://images.unsplash.com/photo-1581579186989-9d1c1c5f5c96?auto=format&fit=crop&w=900&q=80"
+                alt="cleaning surfaces"
+                width={600}
+                height={300}
+                style={{ width: "100%", height: "auto", display: "block" }}
               />
             </div>
           </div>
 
-          {/* Example Feed Post #2 */}
+          {/* FEED POST #2 */}
           <div
             style={{
               background: "white",
@@ -177,8 +201,8 @@ export default function HomePage() {
             <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
               <div
                 style={{
-                  width: "48px",
-                  height: "48px",
+                  width: "40px",
+                  height: "40px",
                   borderRadius: "50%",
                   background: "#e5e7eb",
                 }}
@@ -196,32 +220,39 @@ export default function HomePage() {
             </h3>
 
             <p style={{ opacity: 0.8, marginBottom: "12px" }}>
-              Using my NDIS plan for community access has helped me get back into my art class and
-              meet new people…
+              Using my NDIS plan for community access has helped me…
             </p>
 
+            {/* SMALLER IMAGE */}
             <div
               style={{
                 width: "100%",
+                maxWidth: "600px",
+                margin: "0 auto",
                 borderRadius: "12px",
                 overflow: "hidden",
-                marginTop: "8px",
               }}
             >
               <Image
-                src="https://images.unsplash.com/photo-1509099836639-18ba1795216d"
+                src="https://images.unsplash.com/photo-1521302080334-4bebac27605e?auto=format&fit=crop&w=900&q=80"
                 alt="community access"
-                width={800}
-                height={400}
+                width={600}
+                height={300}
                 style={{ width: "100%", height: "auto" }}
               />
             </div>
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <aside style={{ width: "260px", display: "flex", flexDirection: "column", gap: "16px" }}>
-          {/* Appointment Card */}
+        {/* RIGHT SIDEBAR */}
+        <aside
+          style={{
+            width: "260px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
           <div
             style={{
               background: "#ffd6d6",
@@ -234,7 +265,6 @@ export default function HomePage() {
             <p>Tomorrow: 9:00am - 10:00am</p>
           </div>
 
-          {/* Pending Request Card */}
           <div
             style={{
               background: "#fff2b3",
@@ -247,7 +277,6 @@ export default function HomePage() {
             <p>Transport Support – awaiting confirmation</p>
           </div>
 
-          {/* Quick Actions */}
           <div
             style={{
               background: "white",
@@ -257,7 +286,7 @@ export default function HomePage() {
             }}
           >
             <h3 style={{ marginBottom: "8px" }}>Quick Actions</h3>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, lineHeight: "1.8" }}>
+            <ul style={{ listStyle: "none", padding: 0, lineHeight: "1.8" }}>
               <li>Post a Job &gt;</li>
               <li>Manage Job Posts &gt;</li>
               <li>Find a Support Provider &gt;</li>
