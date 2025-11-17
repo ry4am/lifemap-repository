@@ -132,7 +132,7 @@ export default function RegisterPage() {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          fullName: form.fullName,
+          name: form.name,
           email: form.email,
           password: form.password,
           // you can also send ndisId if you decide to store it
@@ -163,8 +163,8 @@ export default function RegisterPage() {
           <input
             type="text"
             required
-            value={form.fullName}
-            onChange={update('fullName')}
+            value={form.name}
+            onChange={update('name')}
             style={inputStyle}
           />
         </div>
