@@ -8,7 +8,6 @@ import React from "react";
 export default function HomePage() {
   const { data: session, status } = useSession();
 
-  // Use full name from Neon user table if logged in
   const displayName =
     status === "authenticated" && session?.user?.name
       ? session.user.name
@@ -27,7 +26,7 @@ export default function HomePage() {
       {/* Top Navbar */}
       <NavBar />
 
-      {/* Small login status helper (you can remove later if you want) */}
+      {/* Small login status helper */}
       <div
         style={{
           marginTop: "8px",
@@ -149,7 +148,7 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Example Feed Post #1 */}
+          {/* Feed Post #1 – Cleaning */}
           <div
             style={{
               background: "white",
@@ -184,6 +183,7 @@ export default function HomePage() {
               include regular cleaning and laundry support…
             </p>
 
+            {/* ✅ Fixed cleaning image */}
             <div
               style={{
                 width: "100%",
@@ -193,16 +193,16 @@ export default function HomePage() {
               }}
             >
               <Image
-                src="https://images.unsplash.com/photo-1581578731548-c64695cc6950"
-                alt="cleaning"
+                src="https://images.unsplash.com/photo-1581579186989-9d1c1c5f5c96?auto=format&fit=crop&w=1200&q=80"
+                alt="cleaning surfaces"
                 width={800}
                 height={400}
-                style={{ width: "100%", height: "auto" }}
+                style={{ width: "100%", height: "auto", display: "block" }}
               />
             </div>
           </div>
 
-          {/* Example Feed Post #2 */}
+          {/* Feed Post #2 – Kids / community access */}
           <div
             style={{
               background: "white",
@@ -246,11 +246,11 @@ export default function HomePage() {
               }}
             >
               <Image
-                src="https://images.unsplash.com/photo-1509099836639-18ba1795216d"
+                src="https://images.unsplash.com/photo-1521302080334-4bebac27605e?auto=format&fit=crop&w=1200&q=80"
                 alt="community access"
                 width={800}
                 height={400}
-                style={{ width: "100%", height: "auto" }}
+                style={{ width: "100%", height: "auto", display: "block" }}
               />
             </div>
           </div>
