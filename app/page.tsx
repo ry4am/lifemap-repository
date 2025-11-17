@@ -5,13 +5,12 @@ import NavBar from "@/components/NavBar";
 import Image from "next/image";
 import React from "react";
 
+// Full Home Page Component
 export default function HomePage() {
   const { data: session, status } = useSession();
 
-  const displayName =
-    status === "authenticated" && session?.user?.name
-      ? session.user.name
-      : "Participant";
+  // Only use the full name stored in Neon user table
+  const displayName = session?.user?.name || "Participant";
 
   return (
     <main
@@ -20,39 +19,18 @@ export default function HomePage() {
         flexDirection: "column",
         minHeight: "100dvh",
         width: "100%",
-        background: "#f0f4ff",
+        background: "#f0f4ff"
       }}
     >
       {/* Top Navbar */}
       <NavBar />
-
-      {/* Small login status helper */}
-      <div
-        style={{
-          marginTop: "8px",
-          marginLeft: "20px",
-          fontSize: "12px",
-          opacity: 0.7,
-        }}
-      >
-        {status === "loading" && <span>Checking sign-in status…</span>}
-        {status === "unauthenticated" && (
-          <span>You are not signed in. (Home page sees no session.)</span>
-        )}
-        {status === "authenticated" && (
-          <span>
-            Signed in as <strong>{session?.user?.name}</strong> (
-            {session?.user?.email})
-          </span>
-        )}
-      </div>
 
       {/* Page Container */}
       <div
         style={{
           display: "flex",
           width: "100%",
-          marginTop: "12px",
+          marginTop: "20px",
           padding: "0 20px",
           gap: "24px",
         }}
@@ -94,25 +72,11 @@ export default function HomePage() {
             <p style={{ opacity: 0.7 }}>Participant</p>
 
             {/* Stats */}
-            <div
-              style={{
-                marginTop: "20px",
-                textAlign: "left",
-                lineHeight: "1.9",
-              }}
-            >
-              <div>
-                Profile Viewers <strong>8</strong>
-              </div>
-              <div>
-                Jobs Completed <strong>12</strong>
-              </div>
-              <div>
-                Connections <strong>6</strong>
-              </div>
-              <div>
-                Reviews <strong>2</strong>
-              </div>
+            <div style={{ marginTop: "20px", textAlign: "left", lineHeight: "1.9" }}>
+              <div>Profile Viewers <strong>8</strong></div>
+              <div>Jobs Completed <strong>12</strong></div>
+              <div>Connections <strong>6</strong></div>
+              <div>Reviews <strong>2</strong></div>
             </div>
           </div>
         </aside>
@@ -148,7 +112,7 @@ export default function HomePage() {
             />
           </div>
 
-          {/* Feed Post #1 – Cleaning */}
+          {/* Example Feed Post #1 */}
           <div
             style={{
               background: "white",
@@ -179,11 +143,10 @@ export default function HomePage() {
             </h3>
 
             <p style={{ opacity: 0.8, marginBottom: "12px" }}>
-              Today I helped a participant re-allocate some core funding to
-              include regular cleaning and laundry support…
+              Today I helped a participant re-allocate some core funding to include regular cleaning and
+              laundry support…
             </p>
 
-            {/* ✅ Fixed cleaning image */}
             <div
               style={{
                 width: "100%",
@@ -193,16 +156,16 @@ export default function HomePage() {
               }}
             >
               <Image
-                src="https://images.unsplash.com/photo-1581579186989-9d1c1c5f5c96?auto=format&fit=crop&w=1200&q=80"
-                alt="cleaning surfaces"
+                src="https://images.unsplash.com/photo-1581578731548-c64695cc6950"
+                alt="cleaning"
                 width={800}
                 height={400}
-                style={{ width: "100%", height: "auto", display: "block" }}
+                style={{ width: "100%", height: "auto" }}
               />
             </div>
           </div>
 
-          {/* Feed Post #2 – Kids / community access */}
+          {/* Example Feed Post #2 */}
           <div
             style={{
               background: "white",
@@ -233,8 +196,8 @@ export default function HomePage() {
             </h3>
 
             <p style={{ opacity: 0.8, marginBottom: "12px" }}>
-              Using my NDIS plan for community access has helped me get back
-              into my art class and meet new people…
+              Using my NDIS plan for community access has helped me get back into my art class and
+              meet new people…
             </p>
 
             <div
@@ -246,25 +209,18 @@ export default function HomePage() {
               }}
             >
               <Image
-                src="https://images.unsplash.com/photo-1521302080334-4bebac27605e?auto=format&fit=crop&w=1200&q=80"
+                src="https://images.unsplash.com/photo-1509099836639-18ba1795216d"
                 alt="community access"
                 width={800}
                 height={400}
-                style={{ width: "100%", height: "auto", display: "block" }}
+                style={{ width: "100%", height: "auto" }}
               />
             </div>
           </div>
         </div>
 
         {/* Right Sidebar */}
-        <aside
-          style={{
-            width: "260px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "16px",
-          }}
-        >
+        <aside style={{ width: "260px", display: "flex", flexDirection: "column", gap: "16px" }}>
           {/* Appointment Card */}
           <div
             style={{
@@ -301,14 +257,7 @@ export default function HomePage() {
             }}
           >
             <h3 style={{ marginBottom: "8px" }}>Quick Actions</h3>
-            <ul
-              style={{
-                listStyle: "none",
-                padding: 0,
-                margin: 0,
-                lineHeight: "1.8",
-              }}
-            >
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, lineHeight: "1.8" }}>
               <li>Post a Job &gt;</li>
               <li>Manage Job Posts &gt;</li>
               <li>Find a Support Provider &gt;</li>
