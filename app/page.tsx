@@ -5,12 +5,14 @@ import NavBar from "@/components/NavBar";
 import Image from "next/image";
 import React from "react";
 
-// Full Home Page Component
 export default function HomePage() {
   const { data: session, status } = useSession();
 
-  // Only use the full name stored in Neon user table
-  const displayName = session?.user?.name || "Participant";
+  // Use full name from Neon user table if logged in
+  const displayName =
+    status === "authenticated" && session?.user?.name
+      ? session.user.name
+      : "Participant";
 
   return (
     <main
@@ -19,18 +21,39 @@ export default function HomePage() {
         flexDirection: "column",
         minHeight: "100dvh",
         width: "100%",
-        background: "#f0f4ff"
+        background: "#f0f4ff",
       }}
     >
       {/* Top Navbar */}
       <NavBar />
+
+      {/* Small login status helper (you can remove later if you want) */}
+      <div
+        style={{
+          marginTop: "8px",
+          marginLeft: "20px",
+          fontSize: "12px",
+          opacity: 0.7,
+        }}
+      >
+        {status === "loading" && <span>Checking sign-in status…</span>}
+        {status === "unauthenticated" && (
+          <span>You are not signed in. (Home page sees no session.)</span>
+        )}
+        {status === "authenticated" && (
+          <span>
+            Signed in as <strong>{session?.user?.name}</strong> (
+            {session?.user?.email})
+          </span>
+        )}
+      </div>
 
       {/* Page Container */}
       <div
         style={{
           display: "flex",
           width: "100%",
-          marginTop: "20px",
+          marginTop: "12px",
           padding: "0 20px",
           gap: "24px",
         }}
@@ -72,11 +95,25 @@ export default function HomePage() {
             <p style={{ opacity: 0.7 }}>Participant</p>
 
             {/* Stats */}
-            <div style={{ marginTop: "20px", textAlign: "left", lineHeight: "1.9" }}>
-              <div>Profile Viewers <strong>8</strong></div>
-              <div>Jobs Completed <strong>12</strong></div>
-              <div>Connections <strong>6</strong></div>
-              <div>Reviews <strong>2</strong></div>
+            <div
+              style={{
+                marginTop: "20px",
+                textAlign: "left",
+                lineHeight: "1.9",
+              }}
+            >
+              <div>
+                Profile Viewers <strong>8</strong>
+              </div>
+              <div>
+                Jobs Completed <strong>12</strong>
+              </div>
+              <div>
+                Connections <strong>6</strong>
+              </div>
+              <div>
+                Reviews <strong>2</strong>
+              </div>
             </div>
           </div>
         </aside>
@@ -143,8 +180,8 @@ export default function HomePage() {
             </h3>
 
             <p style={{ opacity: 0.8, marginBottom: "12px" }}>
-              Today I helped a participant re-allocate some core funding to include regular cleaning and
-              laundry support…
+              Today I helped a participant re-allocate some core funding to
+              include regular cleaning and laundry support…
             </p>
 
             <div
@@ -196,8 +233,8 @@ export default function HomePage() {
             </h3>
 
             <p style={{ opacity: 0.8, marginBottom: "12px" }}>
-              Using my NDIS plan for community access has helped me get back into my art class and
-              meet new people…
+              Using my NDIS plan for community access has helped me get back
+              into my art class and meet new people…
             </p>
 
             <div
@@ -220,7 +257,14 @@ export default function HomePage() {
         </div>
 
         {/* Right Sidebar */}
-        <aside style={{ width: "260px", display: "flex", flexDirection: "column", gap: "16px" }}>
+        <aside
+          style={{
+            width: "260px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          }}
+        >
           {/* Appointment Card */}
           <div
             style={{
@@ -257,7 +301,14 @@ export default function HomePage() {
             }}
           >
             <h3 style={{ marginBottom: "8px" }}>Quick Actions</h3>
-            <ul style={{ listStyle: "none", padding: 0, margin: 0, lineHeight: "1.8" }}>
+            <ul
+              style={{
+                listStyle: "none",
+                padding: 0,
+                margin: 0,
+                lineHeight: "1.8",
+              }}
+            >
               <li>Post a Job &gt;</li>
               <li>Manage Job Posts &gt;</li>
               <li>Find a Support Provider &gt;</li>
