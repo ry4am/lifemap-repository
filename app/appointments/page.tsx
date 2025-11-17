@@ -68,7 +68,7 @@ export default function AppointmentsPage() {
         if (lc.startsWith('or ') || lc.startsWith('and ')) continue;
 
         if (
-          lc === 'assistance to access' ||
+          lc === 'assistance to access and' ||
           lc === 'assistance to access and maintain employment and'
         ) {
           const full =
