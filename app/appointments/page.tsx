@@ -5,7 +5,6 @@ import { useSession } from 'next-auth/react';
 import NavBar from '@/components/NavBar';
 import providersData from '@/data/providers.json';
 
-// Avoid static prerender issues
 export const dynamic = 'force-dynamic';
 
 // Match providers.json shape
@@ -30,7 +29,6 @@ type FormState = {
 };
 
 export default function AppointmentsPage() {
-  // ❗ UseSession defensively – don't destructure directly
   const sessionResult = useSession();
   const session = sessionResult?.data;
   const status = sessionResult?.status ?? 'unauthenticated';
@@ -64,10 +62,20 @@ export default function AppointmentsPage() {
         const clean = raw.trim();
         if (!clean) continue;
 
-        const lc = clean.toLowerCase();
+        let lc = clean.toLowerCase();
 
-        // Skip fragments like "or education", "or maintain employment"
+        // Skip obvious fragments like "or education", "or maintain employment and"
         if (lc.startsWith('or ') || lc.startsWith('and ')) continue;
+
+        if (
+          lc === 'assistance to access' ||
+          lc === 'assistance to access and maintain employment and'
+        ) {
+          const full =
+            'Assistance to access and maintain employment and/or education';
+          set.add(full);
+          continue;
+        }
 
         set.add(clean);
       }
@@ -101,11 +109,12 @@ export default function AppointmentsPage() {
     const data = await res.json().catch(() => null);
     setLoading(false);
 
+    console.log('Appointment API response:', data);
+
     if (res.ok) {
       alert(
-        'Appointment booked successfully. A confirmation email has been sent to your account email.'
+        `Appointment booked. A confirmation email has been sent to your account email.`
       );
-      console.log('API response:', data);
       setForm({
         title: '',
         serviceType: '',
@@ -154,7 +163,11 @@ export default function AppointmentsPage() {
               borderRadius: 16,
               border: '1px solid #ddd',
               background:
-                status === 'authenticated' ? '#ecfdf5' : status === 'loading' ? '#eff6ff' : '#fef2f2',
+                status === 'authenticated'
+                  ? '#ecfdf5'
+                  : status === 'loading'
+                  ? '#eff6ff'
+                  : '#fef2f2',
               fontSize: 14,
             }}
           >
@@ -162,8 +175,8 @@ export default function AppointmentsPage() {
 
             {status === 'unauthenticated' && (
               <span>
-                You are not logged in. Please sign in to book appointments so we can email your
-                confirmation to your account.
+                You are not logged in. Please sign in to book appointments so we
+                can email your confirmation to your account.
               </span>
             )}
 
@@ -198,9 +211,9 @@ export default function AppointmentsPage() {
           >
             <h1 style={{ margin: '0 0 8px' }}>Book an Appointment</h1>
             <p style={{ margin: '0 0 16px', fontSize: 14, opacity: 0.8 }}>
-              Tell LifeMap what you need help with and when. The AI will select the most suitable
-              NDIS provider, and a confirmation email will be sent to the email on your LifeMap
-              account.
+              Tell LifeMap what you need help with and when. The AI will select
+              the most suitable NDIS provider, and a confirmation email will be
+              sent to the email on your LifeMap account.
             </p>
 
             {/* Title */}
